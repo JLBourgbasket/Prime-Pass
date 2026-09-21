@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 a{color:inherit}.service-card,.text-button{text-decoration:none}.next-card>a{margin-left:auto;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#fff;width:42px;height:42px;border-radius:50%;display:grid;place-items:center}.bottom-nav>a{border:0;background:none;color:#708097;border-radius:13px;padding:8px 19px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;text-decoration:none}
+@media(max-width:850px){.bottom-nav>a{padding:8px 12px}}@media(max-width:520px){.bottom-nav>a span{display:none}.bottom-nav>a{padding:11px 18px}}
 
 :root {
   font-family: 'Avenir Next', 'Manrope', system-ui, sans-serif;
