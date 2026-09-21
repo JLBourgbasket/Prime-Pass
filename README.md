@@ -7,7 +7,7 @@ Application PWA de gestion des accès quotidiens Entreprise de PRIME Sport Sant�
 - Activation nominative d’un droit quotidien partagé par l’entreprise.
 - Attribution atomique du dernier accès disponible via une fonction PostgreSQL.
 - Affichage de la fréquentation et des capacités Fit / Well.
-- Réservation des prestations Well et gestion du quota cryothérapie.
+- Redirection vers l’application Resamania pour les réservations Well, sans synchronisation de calendrier.
 - Espace Entreprise avec utilisateurs, usages et onboardings.
 - Console Prime avec objectifs commerciaux et suivi de capacité.
 - Mode démonstration automatique lorsqu’aucun projet Supabase n’est configuré.
@@ -55,3 +55,5 @@ Le fichier `netlify.toml` et la redirection SPA sont déjà présents.
 ## Règle métier structurante
 
 Le contrôle d’accès physique n’est pas intégré à l’application. Le bracelet reste le moyen d’identification et d’ouverture de porte ; PRIME PASS constitue la source de vérité pour l’attribution contractuelle des droits quotidiens.
+
+Les réservations ne sont pas dupliquées dans PRIME PASS. Les boutons « Réserver » ouvrent l’application membre Resamania / Xplor Active. L’URL propre à PRIME Sport Santé peut être définie avec `VITE_RESAMANIA_BOOKING_URL` ; à défaut, la page officielle Xplor Active est utilisée.
