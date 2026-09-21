@@ -9,6 +9,9 @@ import { companies, companyMembers, wellServices } from './lib/mock'
 
 type View = 'member' | 'company' | 'prime'
 
+const RESAMANIA_BOOKING_URL = import.meta.env.VITE_RESAMANIA_BOOKING_URL
+  || 'https://www.resamania.fr/lp-xplor-active/'
+
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`brand ${compact ? 'brand-compact' : ''}`}>
@@ -35,9 +38,7 @@ function MemberDashboard() {
   const [remaining, setRemaining] = useState(1)
   const [activated, setActivated] = useState(false)
   const [claiming, setClaiming] = useState(false)
-  const [modal, setModal] = useState(false)
   const [toast, setToast] = useState('')
-  const [selectedService, setSelectedService] = useState('cryo')
 
   async function activate() {
     if (activated || remaining <= 0) return
@@ -79,13 +80,13 @@ function MemberDashboard() {
         <div className="micro-stats"><span><Dumbbell size={16} /> EGYM 5/8</span><span><Activity size={16} /> Cardio 6/12</span><span><Sparkles size={16} /> Well 3/9</span></div>
       </section>
 
-      <div className="section-title standalone"><div><span>PRIME WELL</span><h2>Réserver une prestation</h2></div><button className="text-button" onClick={() => setModal(true)}>Voir tout <ChevronRight size={17} /></button></div>
+      <div className="section-title standalone"><div><span>PRIME WELL</span><h2>Réserver une prestation</h2></div><a className="text-button" href={RESAMANIA_BOOKING_URL} target="_blank" rel="noreferrer">Ouvrir Resamania <ChevronRight size={17} /></a></div>
       <div className="service-grid">
         {wellServices.map((service) => (
-          <button className={`service-card tone-${service.tone}`} key={service.id} onClick={() => { setSelectedService(service.id); setModal(true) }}>
+          <a className={`service-card tone-${service.tone}`} key={service.id} href={RESAMANIA_BOOKING_URL} target="_blank" rel="noreferrer" aria-label={`Réserver ${service.name} dans l’application Resamania`}>
             <span className="service-icon">{service.id === 'cryo' ? <Sparkles /> : service.id === 'hydro' ? <HeartPulse /> : service.id === 'photo' ? <Activity /> : <Gauge />}</span>
             <strong>{service.name}</strong><small>{service.duration}</small><ChevronRight size={18} />
-          </button>
+          </a>
         ))}
       </div>
 
@@ -95,32 +96,13 @@ function MemberDashboard() {
       </section>
 
       <section className="next-card">
-        <div className="date-box"><strong>24</strong><span>SEP</span></div>
-        <div><span>PROCHAIN RENDEZ-VOUS</span><h3>Photobiomodulation</h3><p><Clock3 size={15} /> 18 h 20 · 20 minutes</p></div>
-        <button aria-label="Voir le rendez-vous"><ChevronRight /></button>
+        <div className="date-box"><CalendarDays /><span>RÉSERVER</span></div>
+        <div><span>PLANNING PRIME SPORT SANTÉ</span><h3>Réservations dans Resamania</h3><p><Clock3 size={15} /> Consultez les disponibilités et choisissez votre créneau.</p></div>
+        <a href={RESAMANIA_BOOKING_URL} target="_blank" rel="noreferrer" aria-label="Ouvrir l’application Resamania"><ChevronRight /></a>
       </section>
 
-      {modal && <BookingModal serviceId={selectedService} close={() => setModal(false)} booked={() => { setModal(false); setToast('Votre réservation est confirmée') }} />}
       {toast && <div className="toast"><Check size={18} />{toast}<button onClick={() => setToast('')}><X size={16} /></button></div>}
     </>
-  )
-}
-
-function BookingModal({ serviceId, close, booked }: { serviceId: string; close: () => void; booked: () => void }) {
-  const service = wellServices.find((item) => item.id === serviceId) || wellServices[0]
-  const [day, setDay] = useState('24')
-  const [time, setTime] = useState('18:20')
-  return (
-    <div className="modal-backdrop" onMouseDown={close}>
-      <div className="modal" onMouseDown={(event) => event.stopPropagation()}>
-        <button className="modal-close" onClick={close}><X /></button>
-        <Pill tone="well">RÉSERVATION</Pill><h2>{service.name}</h2><p>Choisissez votre créneau. La séance sera ajoutée à votre planning.</p>
-        <label>Date<div className="choice-row">{['23', '24', '25', '26'].map((value) => <button key={value} className={day === value ? 'selected' : ''} onClick={() => setDay(value)}><small>SEP</small><strong>{value}</strong></button>)}</div></label>
-        <label>Heure<div className="choice-row times">{['17:40', '18:20', '19:00'].map((value) => <button key={value} className={time === value ? 'selected' : ''} onClick={() => setTime(value)}>{value}</button>)}</div></label>
-        <label className="checkbox"><input type="checkbox" defaultChecked={service.id === 'cryo'} /><span>Venue exclusivement dédiée à cette prestation</span></label>
-        <button className="primary-button full" onClick={booked}>Confirmer le {day} septembre à {time}</button>
-      </div>
-    </div>
   )
 }
 
@@ -176,7 +158,7 @@ function App() {
       <main>{view === 'member' ? <MemberDashboard /> : view === 'company' ? <CompanyDashboard /> : <PrimeDashboard />}</main>
       <nav className="bottom-nav" aria-label="Navigation principale">
         <button className={view === 'member' ? 'active' : ''} onClick={() => setView('member')}><Home /><span>Mon Pass</span></button>
-        <button onClick={() => setView('member')}><CalendarDays /><span>Réserver</span></button>
+        <a href={RESAMANIA_BOOKING_URL} target="_blank" rel="noreferrer"><CalendarDays /><span>Réserver</span></a>
         <button className={view === 'company' ? 'active' : ''} onClick={() => setView('company')}><Building2 /><span>Entreprise</span></button>
         <button className={view === 'prime' ? 'active' : ''} onClick={() => setView('prime')}><BarChart3 /><span>Prime</span></button>
       </nav>
