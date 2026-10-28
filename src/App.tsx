@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, useCallback, useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent, ReactElement, ReactNode } from 'react'
+import type { ClipboardEvent, FormEvent, ReactElement, ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { ArrowLeft, ArrowRight, CalendarDays, Check, ChevronRight, LogOut, Plus, RefreshCw, Snowflake, Users, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
@@ -23,12 +23,44 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return <div className="field"><label htmlFor={id}>{label}</label>{Children.map(children, child => isValidElement(child) && ['input','select','textarea'].includes(String(child.type)) ? cloneElement(child as ReactElement<{ id?: string }>, { id }) : child)}</div>
 }
 function Photo({ logo, onChange }: { logo: string | null; onChange: (s: string | null) => void }) {
-  const [error, setError] = useState('')
-  return <Field label="Logo de l’entreprise (facultatif)"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e => {
-    const file = e.target.files?.[0]; if (!file) return
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 250_000) { setError('Choisissez une image PNG, JPG ou WebP de moins de 250 Ko.'); return }
-    const reader = new FileReader(); reader.onload = () => { setError(''); onChange(String(reader.result)) }; reader.readAsDataURL(file)
-  }}/><small>PNG, JPG ou WebP · 250 Ko maximum</small>{logo && <div className="logo-line"><img src={logo} alt="Aperçu du logo"/><button type="button" className="link-button" onClick={() => onChange(null)}>Retirer</button></div>}{error && <span role="alert" className="error-text">{error}</span>}</Field>
+  const [error, setError] = useState(''), [hint, setHint] = useState('')
+  const pasteButton = useRef<HTMLButtonElement>(null)
+  function importImage(file: Blob) {
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 250_000) {
+      setError('Choisissez une image PNG, JPG ou WebP de moins de 250 Ko.'); return
+    }
+    const reader = new FileReader()
+    reader.onload = () => { setError(''); setHint('Logo importé.'); onChange(String(reader.result)) }
+    reader.onerror = () => setError('Lecture de l’image impossible. Réessayez ou choisissez un fichier.')
+    reader.readAsDataURL(file)
+  }
+  function paste(event: ClipboardEvent<HTMLDivElement>) {
+    const file = Array.from(event.clipboardData.items).find(item => item.kind === 'file' && item.type.startsWith('image/'))?.getAsFile()
+    if (file) { event.preventDefault(); importImage(file) }
+    else if (event.target === pasteButton.current) {
+      event.preventDefault(); setError('Copiez une image, puis collez-la ici. Un lien ou du texte ne suffit pas.')
+    }
+  }
+  async function readClipboard() {
+    setError(''); setHint('Vous pouvez aussi utiliser Ctrl + V ou Cmd + V sur ce bouton.')
+    pasteButton.current?.focus()
+    if (!navigator.clipboard?.read) return
+    try {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const type = item.types.find(type => ['image/png', 'image/jpeg', 'image/webp'].includes(type))
+        if (type) { importImage(await item.getType(type)); return }
+      }
+      setError('Le presse-papiers ne contient pas d’image. Copiez le logo lui-même, puis réessayez.')
+    } catch { setHint('Le navigateur ne permet pas le collage direct. Appuyez sur Ctrl + V ou Cmd + V sur ce bouton, ou choisissez un fichier.') }
+  }
+  return <div onPaste={paste}><Field label="Logo de l’entreprise (facultatif)">
+    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={e => { const file = e.target.files?.[0]; if (file) importImage(file) }}/>
+    <div><button ref={pasteButton} type="button" className="secondary" onClick={() => void readClipboard()}>Coller un logo</button></div>
+    <small>PNG, JPG ou WebP · 250 Ko maximum · collage avec Ctrl + V ou Cmd + V sur le bouton</small>
+    {logo && <div className="logo-line"><img src={logo} alt="Aperçu du logo"/><button type="button" className="link-button" onClick={() => { onChange(null); setHint(''); setError('') }}>Retirer</button></div>}
+    {hint && <small role="status">{hint}</small>}{error && <span role="alert" className="error-text">{error}</span>}
+  </Field></div>
 }
 function Login({ recovery, onRecovered }: { recovery: boolean; onRecovered: () => void }) {
   const [forgot, setForgot] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')

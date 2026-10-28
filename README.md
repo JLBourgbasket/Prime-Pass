@@ -4,7 +4,7 @@ Gestion interne des droits mutualisés du Pass Entreprise de Prime Sport Santé.
 
 ## Deux espaces
 
-- **Prime** : création des comptes partagés entreprise (nom, contact, e-mail, téléphone, logo facultatif), contrats, liste des bénéficiaires, planning, consommations et corrections cryo.
+- **Prime** : création des comptes partagés entreprise (nom, contact, e-mail, téléphone, logo facultatif, import par fichier ou collage d’image), contrats, liste des bénéficiaires, planning, consommations et corrections cryo.
 - **Entreprise** : compte partagé, administration des bénéficiaires nominatifs, compteur du jour, attribution aujourd’hui et sur les 14 prochains jours, annulation libre à tout moment, quota cryo en lecture et historique.
 
 Le quota d’un contrat est calculé en base : **20 séances cryo par droit quotidien acheté**. Les renouvellements ont leur propre période et leur propre quota ; les contrats ne peuvent pas se chevaucher. Une correction cryo exige un motif et restitue exactement un crédit. Les bénéficiaires sont désactivés sans effacer leur historique ; leur désactivation libère leurs attributions d’aujourd’hui et à venir.
