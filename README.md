@@ -160,3 +160,9 @@ Après chaque dépôt, un second email part de `vip@primesportsante.fr` vers l�
 Les colonnes `receipt_*` et le RPC interne `prime_pass_receipt` suivent cet envoi indépendamment des colonnes `notification_*`. Les deux envois ont des identifiants différents, des verrous et des délais de relance distincts. La console présente les deux états et un bouton pour relancer chaque email non envoyé, sans répéter celui déjà accepté par SMTP. Les jetons de tentative ne sont jamais renvoyés à la console. Les anciens dossiers restent « À envoyer » pour l’accusé ; il n’y a pas d’envoi massif rétroactif.
 
 Vérification du raccordement des accusés : l’envoi vers le contact de la demande Game Plan existante a été accepté par Gmail, avec `receipt_status=sent`, une seule tentative et aucune erreur. La notification interne déjà envoyée n’a pas été répétée.
+
+## Présentation des emails de souscription
+
+Les notifications internes et accusés de réception disposent d’une version HTML et d’une alternative texte. Le modèle utilise une carte blanche, des titres bleu Prime, un récapitulatif et une pile typographique sans empattement (police système, Segoe UI, Arial). Il ne dépend d’aucune police distante. Le logo officiel est un PNG optimisé inclus dans le message via une pièce inline CID, sans URL d’image Netlify ou téléchargement distant.
+
+Les informations saisies sont échappées avant insertion HTML ; seuls les emails internes ont un bouton vers la console. Le modèle a été inspecté sur ordinateur et mobile, et les tests vérifient l’image embarquée, la version HTML, la présence de l’alternative texte et l’échappement des contenus. La présentation finale peut varier selon le logiciel de messagerie. Ces modèles concernent les emails envoyés par les fonctions de souscription ; les modèles d’authentification restent gérés séparément dans Supabase Auth.
