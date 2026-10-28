@@ -19,7 +19,25 @@ export function demoSnapshot(): Snapshot {
 export async function demoApi(action: string, data: Record<string, unknown> = {}) {
   const s = demoSnapshot(), now = new Date().toISOString(), company = String(data.company_id), prime = s.account.role === 'prime_admin'
   if (action === 'snapshot') return s
-  if (action === 'save_vip' && prime) { s.vips ||= []; const v = { ...data, paid_amount: Number(data.paid_amount) } as unknown as import('./model').Vip; const i = s.vips.findIndex(x => x.id === v.id); if (i >= 0) s.vips[i] = v; else s.vips.push(v) }
+  if (action.startsWith('lifecycle_') && prime) {
+    const target=String(data.id),isCompany=action.endsWith('_company'),collection=isCompany?s.companies:(s.vips||[])
+    const client=collection.find(c=>c.id===target);if(!client)throw new Error('Client introuvable')
+    const name=isCompany?(client as import('./model').Company).name:`${(client as import('./model').Vip).first_name} ${(client as import('./model').Vip).last_name}`
+    if(action.includes('_archive_')) {
+      client.active=false
+      if(isCompany){s.contracts.filter(c=>c.company_id===target).forEach(c=>{c.retired_at ||= now});s.claims.filter(c=>c.company_id===target&&c.access_date>=s.today&&!c.cancelled_at).forEach(c=>{c.cancelled_at=now})}
+    } else if(action.includes('_restore_')) {
+      if(client.active)throw new Error('Client déjà actif')
+      if(String(data.starts_on)>String(data.ends_on))throw new Error('Période invalide')
+      if(isCompany){s.contracts.filter(c=>c.company_id===target).forEach(c=>{c.retired_at ||= now});const n=Number(data.daily_rights);s.contracts.push({id:id(),company_id:target,starts_on:String(data.starts_on),ends_on:String(data.ends_on),daily_rights:n,cryo_quota:n*20,discount:data.discount as import('./model').Discount,paid_amount:Number(data.paid_amount)})}
+      else Object.assign(client,{starts_on:data.starts_on,ends_on:data.ends_on,profile:data.profile,duo:data.duo,duo_first_name:data.duo_first_name,duo_last_name:data.duo_last_name,discount:data.discount,paid_amount:Number(data.paid_amount)})
+      client.active=true
+    } else if(action.includes('_purge_')) {
+      if(client.active||data.confirmation!==name)throw new Error('Confirmation invalide')
+      if(isCompany){s.companies=s.companies.filter(c=>c.id!==target);s.contracts=s.contracts.filter(c=>c.company_id!==target);s.beneficiaries=s.beneficiaries.filter(c=>c.company_id!==target);s.claims=s.claims.filter(c=>c.company_id!==target);s.cryo=s.cryo.filter(c=>c.company_id!==target);s.audit=s.audit.filter(c=>c.company_id!==target)}else s.vips=s.vips?.filter(c=>c.id!==target)
+    }
+  }
+  else if (action === 'save_vip' && prime) { s.vips ||= []; const v = { ...data, paid_amount: Number(data.paid_amount) } as unknown as import('./model').Vip; const i = s.vips.findIndex(x => x.id === v.id); if (i >= 0) s.vips[i] = v; else s.vips.push(v) }
   else if (action === 'demo_role') { s.account.role = data.role === 'prime_admin' ? 'prime_admin' : 'company' }
   else if (!prime && company !== s.account.company_id) throw new Error('Entreprise non autorisée')
   else if (action === 'claim') {

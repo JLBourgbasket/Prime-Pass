@@ -2,7 +2,7 @@ export type Account = { user_id: string; role: 'prime_admin' | 'company'; compan
 export type Company = { id: string; name: string; contact_name: string; email: string; phone: string; logo: string | null; active: boolean }
 export type Pricing = { discount?: Discount; list_amount?: number; amount_due?: number; paid_amount?: number | null }
 export type Discount = 'standard' | 'jl_group' | 'free'
-export type Contract = Pricing & { id: string; company_id: string; starts_on: string; ends_on: string; daily_rights: number; cryo_quota: number; paid_amount?: number | null }
+export type Contract = Pricing & { id: string; company_id: string; starts_on: string; ends_on: string; daily_rights: number; cryo_quota: number; retired_at?: string | null; paid_amount?: number | null }
 export type Beneficiary = { id: string; company_id: string; first_name: string; last_name: string; active: boolean }
 export type Claim = { id: string; company_id: string; contract_id: string; beneficiary_id: string; access_date: string; cancelled_at: string | null; created_at: string }
 export type Cryo = { id: string; company_id: string; contract_id: string; beneficiary_id: string; performed_on: string; created_at: string; voided_at: string | null; void_reason: string | null }
@@ -12,7 +12,7 @@ export const fullName = (p?: Beneficiary) => p ? `${p.first_name} ${p.last_name}
 export const parisToday = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 export const addDays = (day: string, count: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + count); return d.toISOString().slice(0, 10) }
 export const dateLabel = (day: string, long = false) => new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: long ? 'long' : 'short', ...(long ? { weekday: 'long' as const, year: 'numeric' as const } : {}) }).format(new Date(`${day.slice(0, 10)}T12:00:00Z`))
-export const contractAt = (s: Snapshot, company: string, day: string) => s.contracts.find(c => c.company_id === company && c.starts_on <= day && c.ends_on >= day)
+export const contractAt = (s: Snapshot, company: string, day: string) => s.contracts.find(c => !c.retired_at && c.company_id === company && c.starts_on <= day && c.ends_on >= day)
 export const available = (s: Snapshot, company: string, day: string) => {
   const contract = contractAt(s, company, day)
   return contract ? Math.max(0, contract.daily_rights - s.claims.filter(c => c.contract_id === contract.id && c.access_date === day && !c.cancelled_at).length) : 0
@@ -24,7 +24,7 @@ export const companyTariff = (rights: number) => 2690 + Math.max(0, rights - 1) 
 export const vipTariff = (profile: string, duo: boolean) => (profile === 'director' ? 1690 : 1890) + (duo ? 800 : 0)
 export const euros = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 export function salesSummary(s: Snapshot) {
-  const contracts = s.contracts.filter(c => s.companies.some(co => co.id === c.company_id && co.active) && c.starts_on <= s.today && c.ends_on >= s.today)
+  const contracts = s.contracts.filter(c => !c.retired_at && s.companies.some(co => co.id === c.company_id && co.active) && c.starts_on <= s.today && c.ends_on >= s.today)
   const vips = (s.vips || []).filter(v => v.active && v.starts_on <= s.today && v.ends_on >= s.today)
   const individual = vips.filter(v => v.profile === 'individual'), directors = vips.filter(v => v.profile === 'director')
   const enterpriseCount = contracts.reduce((n, c) => n + c.daily_rights, 0)

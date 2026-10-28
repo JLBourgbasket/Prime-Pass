@@ -5,7 +5,7 @@ type ClientFactory = (url: string, key: string, options: { auth: { persistSessio
 export function createHandler(createClient: ClientFactory, env: (key: string) => string | undefined, notify?: Notify) {
 const siteUrl = env('SITE_URL') || 'https://primepassentreprise.netlify.app'
 const allowedOrigins = new Set([siteUrl, 'https://deploy-preview-1--primepassentreprise.netlify.app'])
-const allowed = new Set(['subscriptions_notify', 'subscriptions_list', 'subscriptions_campaign', 'subscriptions_decline', 'subscriptions_activate', 'save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
+const allowed = new Set(['lifecycle_archive_company','lifecycle_archive_vip','lifecycle_restore_company','lifecycle_restore_vip','lifecycle_purge_company','lifecycle_purge_vip','subscriptions_notify', 'subscriptions_list', 'subscriptions_campaign', 'subscriptions_decline', 'subscriptions_activate', 'save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
 
 return async (request: Request) => {
   const origin = request.headers.get('origin')
@@ -39,6 +39,22 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
     return result.data
   }
   try {
+    const lifecycle = async (action: string, data: Record<string, unknown> = {}) => {
+      const r=await admin.rpc('prime_pass_lifecycle',{p_actor:auth.user.id,p_action:action,p_data:data});if(r.error)throw r.error;return r.data
+    }
+    const cleanup = async () => {
+      const users=await lifecycle('cleanup_list') as string[]
+      for(const user_id of users){const r=await admin.auth.admin.deleteUser(user_id);if(!r.error || r.error.status===404 || r.error.code==='user_not_found')await lifecycle('cleanup_done',{user_id})}
+    }
+    if(input.action.startsWith('lifecycle_')){
+      const result=await lifecycle(input.action.slice(10),input.data)
+      let cleanupPending=false
+      if(input.action==='lifecycle_purge_company') { try{await cleanup();const remaining=await lifecycle('cleanup_list') as string[];cleanupPending=remaining.some(id=>(result.auth_users || []).includes(id))}catch{cleanupPending=true} }
+      return json({...result,notice:cleanupPending?'Fiche supprimée. La suppression du compte de connexion reste en cours de finalisation.':input.action.includes('purge')?'Fiche supprimée définitivement.':input.action.includes('archive')?'Fiche déplacée vers Clients désactivés.':'Client réactivé avec un nouveau contrat.'})
+    }
+    if(input.action==='snapshot'){
+      const result=await rpc('snapshot');if(result.account.role==='prime_admin'){try{await cleanup()}catch{/* Keep the console available during an Auth outage. */}}return json(result)
+    }
     if (input.action.startsWith('subscriptions_')) {
       const srpc = async (action: string, data: Record<string, unknown> = {}) => {
         const r = await admin.rpc('prime_pass_subscriptions', { p_actor: auth.user.id, p_action: action, p_data: data }); if (r.error) throw r.error; return r.data

@@ -25,7 +25,7 @@ Le quota d’un contrat est calculé en base : **20 séances cryo par droit quot
 
 Projet Supabase : `iljpcjrzctsuluaiseww` (Prime Pass, compte Prime Sport Santé).
 
-Les six migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
+Les sept migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
 
 **À terminer avant utilisation réelle :** premier compte administrateur Prime, configuration des e-mails et des URLs Auth, et déploiement de cette branche sur le nouveau site Netlify. Les parcours de connexion réelle et d’envoi des e-mails doivent ensuite être validés de bout en bout.
 
@@ -65,13 +65,14 @@ Sur une base vierge, exécuter dans cet ordre :
 4. `supabase/subscriptions.sql`
 5. `supabase/admin_discounts.sql`
 6. `supabase/subscription_notifications.sql`
+7. `supabase/client_lifecycle.sql`
 3. Déployer `supabase/functions/prime-pass/index.ts` et son module partagé.
 
 La vérification JWT de la passerelle Edge est désactivée au profit de la validation explicite de la session dans le handler (`auth.getUser(token)`) avant toute opération métier. Aucune action métier n’est anonyme. Les clés serveur proviennent uniquement des variables automatiques Supabase `SUPABASE_SECRET_KEYS` ou de leur équivalent historique.
 
 L’ancienne migration de septembre est conservée sous `supabase/legacy/` pour référence, et ne doit pas être appliquée à la v2. Les fichiers SQL à la racine de `supabase/` sont les sources lisibles testées. Les copies dans `supabase/migrations/` correspondent aux versions effectivement générées par Supabase pour ce nouveau projet.
 
-Les dix avis informatifs « RLS enabled, no policy » du schéma privé sont attendus : les accès directs sont intentionnellement refusés ; seul le serveur utilise ces tables. La table publique de notification dispose de sa propre politique. Voir [la documentation du contrôle RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+Les onze avis informatifs « RLS enabled, no policy » du schéma privé sont attendus : les accès directs sont intentionnellement refusés ; seul le serveur utilise ces tables. La table publique de notification dispose de sa propre politique. Voir [la documentation du contrôle RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 
 ## Développement et vérification
 
@@ -140,3 +141,13 @@ L’état, les tentatives et la date d’envoi restent attachés à la demande. 
 La demande est confirmée au souscripteur même si Gmail échoue. Seules des catégories d’erreur sont conservées ; aucun mot de passe ou message SMTP brut n’est exposé. Les destinataire/expéditeur sont limités à l’adresse VIP configurée, et les notifications reprennent les données enregistrées, jamais un corps de mail ou un destinataire fournis par le client. L’email pointe vers `/?view=subscriptions`, la connexion Prime restant obligatoire. Ce dispositif n’envoie pas encore d’accusé de réception au souscripteur.
 
 Test réel du raccordement : l’envoi de la demande existante Game Plan a atteint Gmail, qui a refusé l’authentification (`smtp_auth`). Aucun doublon de demande n’a été créé. Corriger le secret du mot de passe d’application, puis utiliser « Envoyer la notification » depuis sa fiche pour tester à nouveau.
+
+## Clients désactivés
+
+Les boutons « Supprimer le compte entreprise » et « Supprimer le VIP » demandent confirmation et désactivent la fiche. Elle quitte les listes actives et les compteurs pour rejoindre « Clients désactivés ». L’espace entreprise est bloqué immédiatement par les contrôles d’autorisation serveur ; les attributions à compter d’aujourd’hui sont annulées. Les anciens contrats sont clôturés via `retired_at`, leurs dates et consommations étant conservées pour l’historique.
+
+La réactivation exige une nouvelle période, les nouveaux droits entreprise (quota cryo neuf de 20 séances par droit), ou le profil et duo VIP, le prix payé et une condition tarifaire Prime. Les anciens contrats entreprise ne sont jamais réutilisés. Les changements VIP conservent les anciennes conditions dans l’audit. Le serveur interdit de réactiver une fiche par le simple formulaire de modification.
+
+La suppression définitive n’est possible que sur une fiche inactive, après saisie exacte du nom. L’entreprise est effacée avec ses bénéficiaires, contrats, utilisations, notifications/demandes liées et opérations contenant ses données. Les comptes de connexion sont retirés de l’application avant leur suppression via Supabase Auth. Une file privée `auth_cleanup` permet de reprendre cette dernière étape après un échec réseau lors du prochain chargement de la console Prime ; aucun accès applicatif ne subsiste entre-temps. Aucun compte Auth n’est supprimé par SQL. Les suppressions VIP effacent la fiche et les audits associés. Dans une demande regroupant plusieurs VIP, seule l’identité du VIP supprimé est masquée et les autres clients sont conservés. Une trace minimale de suppression, sans nom, reste dans le journal.
+
+Les opérations passent par un RPC interne réservé au serveur, qui vérifie le rôle Prime, verrouille la fiche et contrôle son état et la confirmation. Les tests de suppression utilisent exclusivement des fixtures isolées ; aucune fiche client réelle n’est supprimée pour vérifier le déploiement.
