@@ -166,3 +166,7 @@ Vérification du raccordement des accusés : l’envoi vers le contact de la dem
 Les notifications internes et accusés de réception disposent d’une version HTML et d’une alternative texte. Le modèle utilise une carte blanche, des titres bleu Prime, un récapitulatif et une pile typographique sans empattement (police système, Segoe UI, Arial). Il ne dépend d’aucune police distante. Le logo officiel est un PNG optimisé inclus dans le message via une pièce inline CID, sans URL d’image Netlify ou téléchargement distant.
 
 Les informations saisies sont échappées avant insertion HTML ; seuls les emails internes ont un bouton vers la console. Le modèle a été inspecté sur ordinateur et mobile, et les tests vérifient l’image embarquée, la version HTML, la présence de l’alternative texte et l’échappement des contenus. La présentation finale peut varier selon le logiciel de messagerie. Ces modèles concernent les emails envoyés par les fonctions de souscription ; les modèles d’authentification restent gérés séparément dans Supabase Auth.
+
+## Modèle HTML Supabase Auth prêt à installer
+
+Le fichier `supabase/templates/recovery.html` harmonise les emails de première définition et de réinitialisation du mot de passe avec la charte Prime. La procédure d’enregistrement et l’objet figurent dans `supabase/templates/README.md`. Ce modèle est préparé et versionné ; il doit être enregistré dans Supabase Auth Email Templates pour devenir actif. La connexion Supabase actuelle ne permet pas d’éditer ce paramètre.
