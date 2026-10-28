@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { ArrowLeft, ArrowRight, CalendarDays, Check, ChevronRight, History, LogOut, Plus, RefreshCw, Snowflake, Users, X } from 'lucide-react'
 import { DiscountChoices, PricingSummary } from './Pricing'
 import type { Discount } from './lib/model'
+import InstallApp from './InstallApp'
 import InactiveClients from './InactiveClients'
 import SubscriptionsAdmin from './SubscriptionsAdmin'
 import { SalesDashboard, VipAdmin } from './VipAdmin'
@@ -195,6 +196,7 @@ function App() {
         </> : company ? <>
           {prime && <button className="link-button back" onClick={() => { setSelected(null); setQuotaId('') }}><ArrowLeft size={16}/>Entreprises</button>}
           <div className="company-heading"><div><div className="eyebrow">{prime ? 'FICHE ENTREPRISE' : 'ESPACE ENTREPRISE'}</div><h1>{company.name}</h1><p>Votre Pass Entreprise, simplement.</p></div>{company.logo && <img className="company-logo" src={company.logo} alt={`Logo ${company.name}`}/>}</div>
+          {!prime && <InstallApp/>}
           {prime && company.active && <div className="actions"><button className="link-button danger-text" disabled={busy} onClick={() => {if(window.confirm(`Supprimer ${company.name} de la liste active ? La fiche sera déplacée vers Clients désactivés et l’accès entreprise sera bloqué.`))void mutate('lifecycle_archive_company',{id:company.id})}}>Supprimer le compte entreprise</button></div>}
           {prime && contracts.length > 0 && <section className="panel"><div className="section-heading"><div><h2>Tarif et règlement</h2><p>Contrat du {dateLabel((current || contracts[0]).starts_on)} au {dateLabel((current || contracts[0]).ends_on,true)}</p></div><button className="secondary" onClick={() => open({kind:'contract',contract:current || contracts[0]})}>Modifier le tarif</button></div><PricingSummary pricing={current || contracts[0]} base={companyTariff((current || contracts[0]).daily_rights)} tax="HT"/></section>}
           {!company.active && <div className="alert">Compte entreprise suspendu.</div>}

@@ -9,10 +9,25 @@
   "lang": "fr",
   "icons": [
     {
-      "src": "/prime-monogram.webp",
-      "sizes": "256x239",
-      "type": "image/webp",
+      "src": "/icons/prime-pass-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icons/prime-pass-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/prime-pass-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "/",
+  "scope": "/",
+  "prefer_related_applications": false
 }

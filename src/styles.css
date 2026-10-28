@@ -85,3 +85,6 @@
 @media(max-width:640px){.enterprise-app .app-header .icon-button{min-width:46px;min-height:46px}}
 
 @media(max-width:640px){.enterprise-app .section-heading .mobile-label{display:inline}}
+
+.install-app{display:none}@media(max-width:640px){.enterprise-app .install-app{display:block;margin:-8px 0 16px}.install-app>.link-button{font-size:12px;min-height:44px}.install-instructions{padding:16px;border:1px solid var(--border);border-radius:12px;background:#f5f9fe;font-size:13px}.install-instructions ol{padding-left:20px}.install-instructions li{margin:10px 0}.install-instructions p{font-size:12px;margin-bottom:0}}
+@media(max-width:640px){.app-header{padding-top:max(12px,env(safe-area-inset-top,0px));padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}}
