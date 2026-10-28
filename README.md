@@ -25,7 +25,7 @@ Le quota d’un contrat est calculé en base : **20 séances cryo par droit quot
 
 Projet Supabase : `iljpcjrzctsuluaiseww` (Prime Pass, compte Prime Sport Santé).
 
-Les deux migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
+Les trois migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
 
 **À terminer avant utilisation réelle :** premier compte administrateur Prime, configuration des e-mails et des URLs Auth, et déploiement de cette branche sur le nouveau site Netlify. Les parcours de connexion réelle et d’envoi des e-mails doivent ensuite être validés de bout en bout.
 
@@ -61,13 +61,14 @@ Sur une base vierge, exécuter dans cet ordre :
 
 1. `supabase/prime_pass_v2.sql`
 2. `supabase/realtime.sql`
+3. `supabase/vip_sales.sql`
 3. Déployer `supabase/functions/prime-pass/index.ts` et son module partagé.
 
 La vérification JWT de la passerelle Edge est désactivée au profit de la validation explicite de la session dans le handler (`auth.getUser(token)`) avant toute opération métier. Aucune action métier n’est anonyme. Les clés serveur proviennent uniquement des variables automatiques Supabase `SUPABASE_SECRET_KEYS` ou de leur équivalent historique.
 
 L’ancienne migration de septembre est conservée sous `supabase/legacy/` pour référence, et ne doit pas être appliquée à la v2. Les fichiers SQL à la racine de `supabase/` sont les sources lisibles testées. Les copies dans `supabase/migrations/` correspondent aux versions effectivement générées par Supabase pour ce nouveau projet.
 
-Les sept avis informatifs « RLS enabled, no policy » du schéma privé sont attendus : les accès directs sont intentionnellement refusés ; seul le serveur utilise ces tables. La table publique de notification dispose de sa propre politique. Voir [la documentation du contrôle RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+Les huit avis informatifs « RLS enabled, no policy » du schéma privé sont attendus : les accès directs sont intentionnellement refusés ; seul le serveur utilise ces tables. La table publique de notification dispose de sa propre politique. Voir [la documentation du contrôle RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 
 ## Développement et vérification
 
@@ -98,3 +99,13 @@ Les captures utilisent exclusivement des données fictives signalées dans l’i
 ![Accueil entreprise](docs/enterprise-preview.webp)
 
 ![Console Prime](docs/admin-preview.webp)
+
+## Suivi du canal VIP JL Bourg
+
+L’administration dispose d’un onglet « VIP individuels et TNS ». Une fiche conserve les identités du titulaire et de son associé éventuel, les coordonnées, le profil, la période et le prix total payé. Aucun compte de connexion individuel n’est créé. Les modifications et suspensions sont historisées dans le journal Prime, sans suppression des fiches.
+
+Tarifs annuels de référence : individuel 1 890 € TTC + duo 800 € TTC ; dirigeant 1 690 € HT + duo 800 € HT ; entreprise 2 690 € HT pour le premier droit quotidien + 1 690 € HT par droit supplémentaire. Le montant total payé est modifiable ; il ne change plus automatiquement après une saisie manuelle, sauf clic sur « Appliquer le tarif ». Les prix historiques inconnus des entreprises restent à renseigner.
+
+L’accueil additionne les droits quotidiens des contrats entreprises actifs, les titulaires VIP et leurs associés duo. Un duo compte deux personnes, un seul droit alterné. Le calcul exclut les périodes futures ou expirées et les comptes suspendus. Les trois compteurs financiers portent sur les prix payés des contrats actifs, duo compris, avec HT et TTC séparés ; ce ne sont pas des cumuls comptables annuels. Les VIP ne sont accessibles qu’à l’administration. Ils sont actualisés au chargement, au retour dans l’onglet, par le bouton Actualiser et au plus tard par le rafraîchissement périodique de 60 secondes.
+
+Vérification Supabase Auth : la protection contre les mots de passe compromis est désactivée dans le projet ; réglage indépendant de ce suivi VIP. [Configuration et disponibilité](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).

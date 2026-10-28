@@ -4,7 +4,7 @@ type ClientFactory = (url: string, key: string, options: { auth: { persistSessio
 export function createHandler(createClient: ClientFactory, env: (key: string) => string | undefined) {
 const siteUrl = env('SITE_URL') || 'https://primepassentreprise.netlify.app'
 const allowedOrigins = new Set([siteUrl, 'https://deploy-preview-1--primepassentreprise.netlify.app'])
-const allowed = new Set(['snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
+const allowed = new Set(['save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
 
 return async (request: Request) => {
   const origin = request.headers.get('origin')

@@ -10,7 +10,7 @@ export function demoSnapshot(): Snapshot {
   const s: Snapshot = {
     today: day, account: { user_id: 'demo', role: 'company', company_id: 'agir' },
     companies: [{ id: 'agir', name: 'AGIR', contact_name: 'Contact AGIR', email: 'contact@example.com', phone: 'À renseigner', logo: '/agir.png', active: true }],
-    contracts: [{ id: 'contract-agir', company_id: 'agir', starts_on: `${day.slice(0, 4)}-01-01`, ends_on: `${Number(day.slice(0, 4)) + 1}-12-31`, daily_rights: 2, cryo_quota: 40 }],
+    contracts: [{ id: 'contract-agir', company_id: 'agir', starts_on: `${day.slice(0, 4)}-01-01`, ends_on: `${Number(day.slice(0, 4)) + 1}-12-31`, daily_rights: 2, cryo_quota: 40, paid_amount: 4380 }],
     beneficiaries: [{ id: 'p1', company_id: 'agir', first_name: 'Alex', last_name: 'Martin', active: true }, { id: 'p2', company_id: 'agir', first_name: 'Claire', last_name: 'Martin', active: true }],
     claims: [{ id: id(), company_id: 'agir', beneficiary_id: 'p1', contract_id: 'contract-agir', access_date: day, created_at: new Date().toISOString(), cancelled_at: null }, { id: id(), company_id: 'agir', beneficiary_id: 'p2', contract_id: 'contract-agir', access_date: addDays(day, 2), created_at: new Date().toISOString(), cancelled_at: null }], cryo: [], audit: [],
   }
@@ -19,7 +19,8 @@ export function demoSnapshot(): Snapshot {
 export async function demoApi(action: string, data: Record<string, unknown> = {}) {
   const s = demoSnapshot(), now = new Date().toISOString(), company = String(data.company_id), prime = s.account.role === 'prime_admin'
   if (action === 'snapshot') return s
-  if (action === 'demo_role') { s.account.role = data.role === 'prime_admin' ? 'prime_admin' : 'company' }
+  if (action === 'save_vip' && prime) { s.vips ||= []; const v = { ...data, paid_amount: Number(data.paid_amount) } as unknown as import('./model').Vip; const i = s.vips.findIndex(x => x.id === v.id); if (i >= 0) s.vips[i] = v; else s.vips.push(v) }
+  else if (action === 'demo_role') { s.account.role = data.role === 'prime_admin' ? 'prime_admin' : 'company' }
   else if (!prime && company !== s.account.company_id) throw new Error('Entreprise non autorisée')
   else if (action === 'claim') {
     const day = String(data.access_date), person = s.beneficiaries.find(p => p.id === data.beneficiary_id && p.company_id === company && p.active)
@@ -47,14 +48,14 @@ export async function demoApi(action: string, data: Record<string, unknown> = {}
   } else if (action === 'create_company') {
     const cid = id(), rights = Number(data.daily_rights)
     s.companies.push({ id: cid, name: String(data.name), contact_name: String(data.contact_name), email: String(data.email), phone: String(data.phone), logo: String(data.logo || '') || null, active: true })
-    s.contracts.push({ id: id(), company_id: cid, starts_on: String(data.starts_on), ends_on: String(data.ends_on), daily_rights: rights, cryo_quota: rights * 20 })
+    s.contracts.push({ id: id(), company_id: cid, starts_on: String(data.starts_on), ends_on: String(data.ends_on), daily_rights: rights, cryo_quota: rights * 20, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) })
   } else if (action === 'update_company') {
     const c = s.companies.find(c => c.id === company); if (c) Object.assign(c, data)
   } else if (action === 'add_contract' || action === 'update_contract') {
     const start = String(data.starts_on), end = String(data.ends_on), rights = Number(data.daily_rights)
     if (start > end || rights < 1) throw new Error('Contrat invalide')
     if (s.contracts.some(c => c.company_id === company && c.id !== data.id && c.starts_on <= end && c.ends_on >= start)) throw new Error('Les contrats ne peuvent pas se chevaucher')
-    const c = { id: String(data.id || id()), company_id: company, starts_on: start, ends_on: end, daily_rights: rights, cryo_quota: rights * 20 }
+    const c = { id: String(data.id || id()), company_id: company, starts_on: start, ends_on: end, daily_rights: rights, cryo_quota: rights * 20, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) }
     if (action === 'add_contract') s.contracts.push(c); else { const i = s.contracts.findIndex(x => x.id === data.id); if (i >= 0) s.contracts[i] = c }
   } else if (action !== 'send_access_link') throw new Error('Action inconnue')
   if (action !== 'demo_role') s.audit.unshift({ id: s.audit.length + 1, company_id: company, action, created_at: now, detail: { input: { reason: String(data.reason || '') } } })

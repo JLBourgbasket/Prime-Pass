@@ -9,6 +9,7 @@ const rpc = async (actor,action,data={}) => (await db.query('select public.prime
 before(async()=>{
  await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key)')
  await db.exec(await readFile(new URL('../supabase/prime_pass_v2.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../supabase/vip_sales.sql',import.meta.url),'utf8'))
  await db.query('insert into auth.users(id) values ($1),($2),($3)',[admin,account,other])
  await db.query("insert into prime_pass.accounts(user_id,role) values($1,'prime_admin')",[admin])
  today=(await db.query("select (now() at time zone 'Europe/Paris')::date::text d")).rows[0].d
@@ -70,4 +71,27 @@ test('renewal separates quotas and prevents overlapping contracts',async()=>{
  await assert.rejects(()=>rpc(admin,'add_contract',{company_id:contract.company_id,starts_on:today,ends_on:'2031-01-01',daily_rights:2}),/chevaucher/)
  await rpc(admin,'add_contract',{company_id:contract.company_id,starts_on:'2031-01-01',ends_on:'2031-12-31',daily_rights:2})
  const s=await rpc(account,'snapshot');assert.equal(s.contracts.length,2);assert.equal(s.contracts[1].cryo_quota,40);assert.equal(s.cryo.filter(c=>c.contract_id===s.contracts[1].id).length,0)
+})
+
+test('VIP records are admin-only, validate duo identities, and preserve paid amounts',async()=>{
+ const vip={id:randomUUID(),first_name:'VIP',last_name:'Test',email:'vip@example.com',phone:'',profile:'individual',duo:true,duo_first_name:'Duo',duo_last_name:'Test',starts_on:today,ends_on:'2030-12-31',paid_amount:'2690.50',active:true}
+ await assert.rejects(()=>rpc(account,'save_vip',vip),/réservée à Prime/)
+ await rpc(admin,'save_vip',vip); await rpc(admin,'save_vip',vip)
+ assert.equal((await rpc(admin,'snapshot')).vips.length,1)
+ assert.equal(Number((await rpc(admin,'snapshot')).vips[0].paid_amount),2690.50)
+ assert.deepEqual((await rpc(account,'snapshot')).vips,[])
+ await assert.rejects(()=>rpc(admin,'save_vip',{...vip,id:randomUUID(),duo_first_name:''}),/check constraint/)
+ await assert.rejects(()=>rpc(admin,'save_vip',{...vip,paid_amount:'-1'}),/check constraint/)
+ await assert.rejects(()=>rpc(admin,'save_vip',{...vip,ends_on:'2020-01-01'}),/check constraint/)
+ await rpc(admin,'save_vip',{...vip,active:false})
+ assert.equal((await rpc(admin,'snapshot')).vips[0].active,false)
+ assert.equal((await rpc(admin,'snapshot')).audit.filter(x=>x.action==='save_vip').length,2)
+})
+test('contract paid amounts can be corrected and historical unknown prices stay null',async()=>{
+ const ct=(await rpc(admin,'snapshot')).contracts.find(c=>c.id===contract.id)
+ assert.equal(ct.paid_amount,null)
+ await rpc(admin,'update_contract',{...ct,paid_amount:'2400.25'})
+ assert.equal(Number((await rpc(admin,'snapshot')).contracts.find(c=>c.id===ct.id).paid_amount),2400.25)
+ await assert.rejects(()=>rpc(account,'update_contract',{...ct,paid_amount:'10'}),/réservée à Prime/)
+ await assert.rejects(()=>rpc(admin,'update_contract',{...ct,paid_amount:'-1'}),/check constraint/)
 })
