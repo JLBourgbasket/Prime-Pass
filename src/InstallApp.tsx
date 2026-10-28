@@ -1,0 +1,12 @@
+import { useEffect, useId, useState } from 'react'
+import { Download } from 'lucide-react'
+type InstallPrompt = Event & { prompt:()=>Promise<void>;userChoice:Promise<{outcome:'accepted'|'dismissed'}> }
+const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||Boolean((navigator as Navigator & {standalone?:boolean}).standalone)
+export default function InstallApp(){
+ const [installed,setInstalled]=useState(standalone),[prompt,setPrompt]=useState<InstallPrompt|null>(null),[help,setHelp]=useState(false),[busy,setBusy]=useState(false)
+ const id=useId(),ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)
+ useEffect(()=>{const media=window.matchMedia('(display-mode: standalone)');const update=()=>setInstalled(standalone());const finished=()=>{setInstalled(true);setPrompt(null)};const ready=(e:Event)=>{e.preventDefault();setPrompt(e as InstallPrompt)};window.addEventListener('beforeinstallprompt',ready);window.addEventListener('appinstalled',finished);media.addEventListener('change',update);return()=>{window.removeEventListener('beforeinstallprompt',ready);window.removeEventListener('appinstalled',finished);media.removeEventListener('change',update)}},[])
+ async function install(){if(busy)return;if(!prompt){setHelp(v=>!v);return}setBusy(true);try{await prompt.prompt();const result=await prompt.userChoice;if(result.outcome==='accepted')setInstalled(true);setPrompt(null)}catch{setHelp(true);setPrompt(null)}finally{setBusy(false)}}
+ if(installed)return null
+ return <div className="install-app"><button className="link-button" type="button" disabled={busy} aria-expanded={help} aria-controls={help?id:undefined} onClick={()=>void install()}><Download size={17}/>{busy?'Installation…':'Installer Prime Pass sur mon téléphone'}</button>{help&&<div className="install-instructions" id={id}><strong>Prime Pass sur votre écran d’accueil</strong>{ios?<ol><li>Ouvrez cette page dans Safari.</li><li>Touchez Partager, puis « Sur l’écran d’accueil ».</li><li>Si proposé, activez « Ouvrir comme app web », puis touchez Ajouter.</li></ol>:<ol><li>Ouvrez cette page dans Chrome.</li><li>Ouvrez le menu ⋮, puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».</li><li>Confirmez l’ajout de Prime Pass.</li></ol>}<p>Vous retrouverez Prime Pass avec le monogramme Prime sur votre écran d’accueil. Une connexion Internet reste nécessaire pour utiliser les droits.</p></div>}</div>
+}
