@@ -2,6 +2,7 @@ import { Children, cloneElement, isValidElement, useCallback, useEffect, useId, 
 import type { ClipboardEvent, FormEvent, ReactElement, ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { ArrowLeft, ArrowRight, CalendarDays, Check, ChevronRight, LogOut, Plus, RefreshCw, Snowflake, Users, X } from 'lucide-react'
+import SubscriptionsAdmin from './SubscriptionsAdmin'
 import { SalesDashboard, VipAdmin } from './VipAdmin'
 import { companyTariff, euros } from './lib/model'
 import { supabase } from './lib/supabase'
@@ -88,7 +89,7 @@ function Login({ recovery, onRecovered }: { recovery: boolean; onRecovered: () =
     {error && <div className="alert error" role="alert">{error}</div>}{message && <div className="alert success" role="status">{message}</div>}
     <button className="primary full" disabled={busy || !supabase}>{busy ? 'Veuillez patienter…' : recovery ? 'Enregistrer mon mot de passe' : forgot ? 'Recevoir un lien' : 'Se connecter'}<ArrowRight size={17}/></button>
   </form>{!recovery && <button className="link-button login-back" onClick={() => { setForgot(!forgot); setError(''); setMessage('') }}>{forgot ? 'Retour à la connexion' : 'Mot de passe oublié ?'}</button>}
-  {!supabase && <div className="alert">La configuration de connexion est en attente.</div>}<p className="small">Votre compte entreprise est ouvert par l’équipe Prime.</p></div>
+  {!supabase && <div className="alert">La configuration de connexion est en attente.</div>}<p className="small">Votre compte entreprise est ouvert par l’équipe Prime.</p><a className="link-button" href="/souscription">Demander une souscription Prime VIP</a></div>
 }
 
 function App() {
@@ -97,7 +98,7 @@ function App() {
   const [day, setDay] = useState(''), [quotaId, setQuotaId] = useState(''), [modal, setModal] = useState<Modal | null>(null), [busy, setBusy] = useState(false), [loading, setLoading] = useState(false)
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [syncError, setSyncError] = useState(''), [synced, setSynced] = useState(''), [online, setOnline] = useState(navigator.onLine)
   const [logo, setLogo] = useState<string | null>(null), [rights, setRights] = useState(2), [requestId, setRequestId] = useState(newRequest), [historyPage, setHistoryPage] = useState(1)
-  const [adminView, setAdminView] = useState<'home' | 'vip'>('home'), [paid, setPaid] = useState('4380'), [customPrice, setCustomPrice] = useState(false)
+  const [adminView, setAdminView] = useState<'home' | 'vip' | 'subscriptions'>('home'), [paid, setPaid] = useState('4380'), [customPrice, setCustomPrice] = useState(false)
   const requests = useRef(0), mounted = useRef(true), generation = useRef(0)
   useEffect(() => {
     if (demoEnabled) return
@@ -181,8 +182,8 @@ function App() {
         <div className="sync-line"><span>{loading ? 'Actualisation…' : `Dernière actualisation : ${synced}`}</span><button className="link-button" onClick={() => void load()} disabled={loading}><RefreshCw size={13}/> Actualiser</button></div>
         {notice && <div className="alert success" role="status"><Check size={17}/><span>{notice}</span><button className="icon-button" onClick={() => setNotice('')} aria-label="Fermer le message"><X size={16}/></button></div>}
         {!modal && error && <div role="alert" className="alert error">{error}</div>}
-        {prime && !company && <nav className="tabs" aria-label="Administration"><button className={adminView === 'home' ? 'active' : ''} onClick={() => setAdminView('home')}>Accueil et entreprises</button><button className={adminView === 'vip' ? 'active' : ''} onClick={() => setAdminView('vip')}>VIP individuels et TNS</button></nav>}
-        {prime && !company && adminView === 'vip' ? <VipAdmin snapshot={s} save={async data => { await call('save_vip', data); await load() }}/> : prime && !company ? <>
+        {prime && !company && <nav className="tabs" aria-label="Administration"><button className={adminView === 'home' ? 'active' : ''} onClick={() => setAdminView('home')}>Accueil et entreprises</button><button className={adminView === 'vip' ? 'active' : ''} onClick={() => setAdminView('vip')}>VIP individuels et TNS</button>{!demoEnabled && <button className={adminView === 'subscriptions' ? 'active' : ''} onClick={() => setAdminView('subscriptions')}>Souscriptions</button>}</nav>}
+        {prime && !company && adminView === 'subscriptions' ? <SubscriptionsAdmin refresh={load}/> : prime && !company && adminView === 'vip' ? <VipAdmin snapshot={s} save={async data => { await call('save_vip', data); await load() }}/> : prime && !company ? <>
           <SalesDashboard snapshot={s}/>
           <div className="page-heading"><div><div className="eyebrow">ADMINISTRATION PRIME</div><h1>Entreprises</h1><p>Les comptes et les droits du Pass Entreprise.</p></div><button className="primary" onClick={() => open({ kind: 'company' })}><Plus size={18}/>Créer une entreprise</button></div>
           {s.companies.length ? <div className="table-wrap"><table><thead><tr><th>Entreprise</th><th>Droits / jour</th><th>Cryo restantes</th><th>Contrat</th><th>Statut</th><th aria-label="Consulter"></th></tr></thead><tbody>{s.companies.map(c => { const ct = contractAt(s, c.id, s.today); return <tr key={c.id}><td><button className="company-link" onClick={() => chooseCompany(c)}>{c.logo && <img src={c.logo} alt=""/>}<strong>{c.name}</strong></button></td><td>{ct?.daily_rights ?? '—'}</td><td>{ct ? `${ct.cryo_quota - cryoUsed(s, ct)} / ${ct.cryo_quota}` : '—'}</td><td>{ct ? `Jusqu’au ${dateLabel(ct.ends_on)}` : 'Aucun contrat en cours'}</td><td><span className={`badge ${c.active ? '' : 'neutral'}`}>{c.active ? 'Actif' : 'Suspendu'}</span></td><td><button className="icon-button" aria-label={`Consulter ${c.name}`} onClick={() => chooseCompany(c)}><ChevronRight size={19}/></button></td></tr> })}</tbody></table></div> : <Empty>Aucune entreprise. Créez le premier compte pour commencer.</Empty>}

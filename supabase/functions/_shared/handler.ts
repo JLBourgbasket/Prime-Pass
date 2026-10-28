@@ -4,7 +4,7 @@ type ClientFactory = (url: string, key: string, options: { auth: { persistSessio
 export function createHandler(createClient: ClientFactory, env: (key: string) => string | undefined) {
 const siteUrl = env('SITE_URL') || 'https://primepassentreprise.netlify.app'
 const allowedOrigins = new Set([siteUrl, 'https://deploy-preview-1--primepassentreprise.netlify.app'])
-const allowed = new Set(['save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
+const allowed = new Set(['subscriptions_list', 'subscriptions_campaign', 'subscriptions_decline', 'subscriptions_activate', 'save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
 
 return async (request: Request) => {
   const origin = request.headers.get('origin')
@@ -38,6 +38,31 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
     return result.data
   }
   try {
+    if (input.action.startsWith('subscriptions_')) {
+      const srpc = async (action: string, data: Record<string, unknown> = {}) => {
+        const r = await admin.rpc('prime_pass_subscriptions', { p_actor: auth.user.id, p_action: action, p_data: data }); if (r.error) throw r.error; return r.data
+      }
+      const data = input.data || {}
+      if (input.action === 'subscriptions_list') return json(await srpc('list'))
+      if (input.action === 'subscriptions_campaign') return json(await srpc('set_campaign', data))
+      if (input.action === 'subscriptions_decline') return json(await srpc('decline', data))
+      const sub = await srpc('get', { id: data.id })
+      if (sub.status !== 'pending') return json({ error: 'Cette demande a déjà été traitée.' }, 400)
+      let userId: string | undefined
+      if (sub.offer === 'company') {
+        const created = await admin.auth.admin.createUser({ email: sub.email, password: crypto.randomUUID() + crypto.randomUUID(), email_confirm: true })
+        if (created.error || !created.data.user) throw created.error || new Error('Création impossible')
+        userId = created.data.user.id
+      }
+      let result
+      try { result = await srpc('activate', { ...data, auth_user_id: userId }) }
+      catch(e) { if (userId) await admin.auth.admin.deleteUser(userId); throw e }
+      if (userId) {
+        const mail = await admin.auth.resetPasswordForEmail(sub.email, { redirectTo: origin && allowedOrigins.has(origin) ? origin : siteUrl })
+        return json({ ...result, notice: mail.error ? 'Contrat activé. Renvoyez le lien de mot de passe depuis la fiche entreprise.' : 'Contrat activé. Lien de définition du mot de passe demandé par e-mail.' })
+      }
+      return json({ ...result, notice: 'Souscription activée et ajoutée aux VIP.' })
+    }
     if (input.action === 'create_company' || input.action === 'send_access_link') {
       const snapshot = await rpc('snapshot')
       if (snapshot.account.role !== 'prime_admin') return json({ error: 'Action réservée à Prime' }, 403)
@@ -45,7 +70,7 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
       if (input.action === 'send_access_link') {
         const company = snapshot.companies.find((c: { id: string }) => c.id === input.data?.company_id)
         if (!company) return json({ error: 'Entreprise introuvable' }, 404)
-        const result = await admin.auth.resetPasswordForEmail(company.email, { redirectTo: siteUrl })
+        const result = await admin.auth.resetPasswordForEmail(company.email, { redirectTo: origin && allowedOrigins.has(origin) ? origin : siteUrl })
         if (result.error) throw result.error
         return json({ ok: true })
       }
@@ -63,7 +88,7 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
         await admin.auth.admin.deleteUser(created.data.user.id)
         throw error
       }
-      const mail = await admin.auth.resetPasswordForEmail(email, { redirectTo: siteUrl })
+      const mail = await admin.auth.resetPasswordForEmail(email, { redirectTo: origin && allowedOrigins.has(origin) ? origin : siteUrl })
       return json({ ok: true, company, notice: mail.error ? 'Entreprise créée. Le lien d’accès n’a pas pu être envoyé ; renvoyez-le depuis sa fiche.' : 'Entreprise créée. Lien de définition du mot de passe demandé par e-mail.' })
     }
     return json(await rpc(input.action, input.data))

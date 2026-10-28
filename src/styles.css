@@ -7,3 +7,7 @@
 .sales-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.sales-grid .panel h2{margin:12px 0}.vip-dialog{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;max-height:90vh;overflow:auto;z-index:1000;box-shadow:0 0 0 100vmax #14283b80}.vip-dialog label.field{display:flex;flex-direction:column;gap:8px}@media(max-width:650px){.sales-grid{grid-template-columns:1fr}}
 
 .sales-grid .panel{margin:0}.sales-grid .panel h2{font-size:28px}
+
+.subscribe-page{max-width:1000px}.offer-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0}.offer-option{display:flex;flex-direction:column;gap:12px;border:1px solid #dbe4ef;border-radius:12px;padding:18px;cursor:pointer}.offer-option.selected{border-color:#1763c7;background:#f5f9ff}.offer-option input{width:18px;height:18px}.subscribe-page label.field,.subscriber-person label.field,.panel form label.field{display:flex;flex-direction:column;gap:8px;margin:16px 0}.subscriber-person+.subscriber-person{border-top:1px solid #dbe4ef;margin-top:24px;padding-top:16px}.price-total{font-size:30px;color:#1456a4}.honeypot{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}.subscribe-page fieldset{min-width:0}.tabs{overflow-x:auto}.tabs button{flex-shrink:0}@media(max-width:650px){.offer-options{grid-template-columns:1fr}.subscribe-page h1{font-size:30px}.subscribe-page .primary{width:100%;white-space:normal}}
+
+.subscribe-page a,.subscribe-page+footer a{color:#155db7}.app-header a.brand{text-decoration:none;color:inherit}
