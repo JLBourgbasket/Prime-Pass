@@ -100,7 +100,7 @@ function App() {
   const [day, setDay] = useState(''), [quotaId, setQuotaId] = useState(''), [modal, setModal] = useState<Modal | null>(null), [busy, setBusy] = useState(false), [loading, setLoading] = useState(false)
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [syncError, setSyncError] = useState(''), [synced, setSynced] = useState(''), [online, setOnline] = useState(navigator.onLine)
   const [logo, setLogo] = useState<string | null>(null), [rights, setRights] = useState(2), [requestId, setRequestId] = useState(newRequest), [historyPage, setHistoryPage] = useState(1)
-  const [adminView, setAdminView] = useState<'home' | 'vip' | 'subscriptions'>('home'), [paid, setPaid] = useState('4380'), [customPrice, setCustomPrice] = useState(false)
+  const [adminView, setAdminView] = useState<'home' | 'vip' | 'subscriptions'>(() => new URLSearchParams(location.search).get('view') === 'subscriptions' ? 'subscriptions' : 'home'), [paid, setPaid] = useState('4380'), [customPrice, setCustomPrice] = useState(false)
   const [discount, setDiscount] = useState<Discount>('standard')
   const requests = useRef(0), mounted = useRef(true), generation = useRef(0)
   useEffect(() => {

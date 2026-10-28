@@ -25,7 +25,7 @@ Le quota d’un contrat est calculé en base : **20 séances cryo par droit quot
 
 Projet Supabase : `iljpcjrzctsuluaiseww` (Prime Pass, compte Prime Sport Santé).
 
-Les cinq migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
+Les six migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
 
 **À terminer avant utilisation réelle :** premier compte administrateur Prime, configuration des e-mails et des URLs Auth, et déploiement de cette branche sur le nouveau site Netlify. Les parcours de connexion réelle et d’envoi des e-mails doivent ensuite être validés de bout en bout.
 
@@ -64,6 +64,7 @@ Sur une base vierge, exécuter dans cet ordre :
 3. `supabase/vip_sales.sql`
 4. `supabase/subscriptions.sql`
 5. `supabase/admin_discounts.sql`
+6. `supabase/subscription_notifications.sql`
 3. Déployer `supabase/functions/prime-pass/index.ts` et son module partagé.
 
 La vérification JWT de la passerelle Edge est désactivée au profit de la validation explicite de la session dans le handler (`auth.getUser(token)`) avant toute opération métier. Aucune action métier n’est anonyme. Les clés serveur proviennent uniquement des variables automatiques Supabase `SUPABASE_SECRET_KEYS` ou de leur équivalent historique.
@@ -122,7 +123,7 @@ Prime consulte « Souscriptions », ouvre/ferme la campagne, consulte les identi
 
 La création du compte entreprise demande un email de définition du mot de passe via Supabase Auth, avec retour vers la prévisualisation lorsque la validation y est effectuée. Ajouter `https://deploy-preview-1--primepassentreprise.netlify.app` aux Redirect URLs Supabase pour tester ces liens. Le SMTP Auth est configuré par le propriétaire avec l’expéditeur `Prime Sport Santé <vip@primesportsante.fr>` et le compte d’envoi Google principal `admin@primesportsante.fr`.
 
-**Notifications de souscription :** l’enregistrement en base et la consultation Prime sont actifs ; aucun email automatique de réception n’est encore envoyé. Le SMTP configuré dans Supabase Auth sert aux emails d’authentification, pas aux notifications métier. Leur activation nécessitera un accès d’envoi applicatif côté serveur (Google SMTP/API ou un prestataire). Ne jamais récupérer le mot de passe SMTP Auth en SQL ni le placer dans le frontend.
+**Notifications de souscription :** le dépôt déclenche un email récapitulatif à `vip@primesportsante.fr`, expéditeur `Prime Sport Santé <vip@primesportsante.fr>`, via Google SMTP/TLS 465. Les identifiants sont des secrets Edge (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SUBSCRIPTION_NOTIFY_TO`), indépendants du SMTP Auth. Le mot de passe est celui d’une application Google du compte principal `admin@primesportsante.fr` ; ses espaces de présentation sont retirés à l’envoi. Ne jamais récupérer le mot de passe SMTP Auth en SQL ni placer des secrets dans le frontend. Le transport Nodemailer est épinglé à `10.2.1` dans le module serveur, avec validation TLS et délais bornés.
 
 ## Conditions tarifaires réservées à Prime
 
@@ -131,3 +132,11 @@ Sur les créations, contrats existants et validations de souscriptions, Prime pe
 Les contrats et VIP conservent la condition choisie. Les tarifs de référence et prix après réduction sont des colonnes calculées par PostgreSQL à partir de l’offre ; le client ne peut pas les falsifier. Les écritures restent réservées à Prime et sont historisées. La page publique ne présente aucune réduction et son endpoint rejette les tentatives de choix d’une réduction.
 
 Les fiches entreprises affichent « Tarif et règlement » dès leur ouverture avec un accès direct à la modification du tarif. Le récapitulatif est également présent dans chaque contrat et sur les VIP existants. Les prix historiquement renseignés sont conservés ; les prix inconnus restent « À renseigner ». Les compteurs financiers additionnent les prix payés, donc zéro pour une gratuité, et le compteur des personnes inclut toujours ces contrats actifs.
+
+## Fiabilité des notifications
+
+L’état, les tentatives et la date d’envoi restent attachés à la demande. Une prise de verrou et un jeton de tentative empêchent les doubles envois concurrents. Une nouvelle soumission du même UUID ne renvoie pas un email déjà tenté. Prime peut relancer une notification en attente/échouée depuis la fiche ; délai minimum d’une minute, récupération d’un envoi interrompu après cinq minutes. Une notification acceptée par le serveur SMTP n’est pas renvoyée. Le message a un identifiant stable par demande. Il reste une incertitude en cas de coupure après acceptation SMTP mais avant confirmation en base : une relance manuelle peut alors produire un doublon, la livraison SMTP n’étant pas transactionnelle avec PostgreSQL.
+
+La demande est confirmée au souscripteur même si Gmail échoue. Seules des catégories d’erreur sont conservées ; aucun mot de passe ou message SMTP brut n’est exposé. Les destinataire/expéditeur sont limités à l’adresse VIP configurée, et les notifications reprennent les données enregistrées, jamais un corps de mail ou un destinataire fournis par le client. L’email pointe vers `/?view=subscriptions`, la connexion Prime restant obligatoire. Ce dispositif n’envoie pas encore d’accusé de réception au souscripteur.
+
+Test réel du raccordement : l’envoi de la demande existante Game Plan a atteint Gmail, qui a refusé l’authentification (`smtp_auth`). Aucun doublon de demande n’a été créé. Corriger le secret du mot de passe d’application, puis utiliser « Envoyer la notification » depuis sa fiche pour tester à nouveau.

@@ -1,6 +1,7 @@
+import type { Notify } from './notifications.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 type Factory = (url: string, key: string, options: { auth: { persistSession: boolean; autoRefreshToken: boolean } }) => SupabaseClient
-export function createSubscriptionHandler(createClient: Factory, env: (key: string) => string | undefined) {
+export function createSubscriptionHandler(createClient: Factory, env: (key: string) => string | undefined, notify?: Notify) {
  const origins = new Set([env('SITE_URL') || 'https://primepassentreprise.netlify.app','https://deploy-preview-1--primepassentreprise.netlify.app'])
  return async (req: Request) => {
   const origin=req.headers.get('origin')
@@ -25,6 +26,9 @@ export function createSubscriptionHandler(createClient: Factory, env: (key: stri
    }
    const result=await db.rpc('prime_pass_subscriptions',{p_actor:null,p_action:req.method==='GET'?'campaign':'submit',p_data:data})
    if(result.error) throw result.error
+   if(req.method==='POST' && notify && result.data?.reference) {
+    try { await notify(db,result.data.reference) } catch { /* Request is already durable; retry is available to Prime. */ }
+   }
    return json(result.data)
   } catch(e) {
    const message=e && typeof e==='object' && 'message' in e ? String(e.message) : ''
