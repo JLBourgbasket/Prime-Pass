@@ -48,14 +48,14 @@ export async function demoApi(action: string, data: Record<string, unknown> = {}
   } else if (action === 'create_company') {
     const cid = id(), rights = Number(data.daily_rights)
     s.companies.push({ id: cid, name: String(data.name), contact_name: String(data.contact_name), email: String(data.email), phone: String(data.phone), logo: String(data.logo || '') || null, active: true })
-    s.contracts.push({ id: id(), company_id: cid, starts_on: String(data.starts_on), ends_on: String(data.ends_on), daily_rights: rights, cryo_quota: rights * 20, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) })
+    s.contracts.push({ id: id(), company_id: cid, starts_on: String(data.starts_on), ends_on: String(data.ends_on), daily_rights: rights, cryo_quota: rights * 20, discount: (data.discount || 'standard') as import('./model').Discount, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) })
   } else if (action === 'update_company') {
     const c = s.companies.find(c => c.id === company); if (c) Object.assign(c, data)
   } else if (action === 'add_contract' || action === 'update_contract') {
     const start = String(data.starts_on), end = String(data.ends_on), rights = Number(data.daily_rights)
     if (start > end || rights < 1) throw new Error('Contrat invalide')
     if (s.contracts.some(c => c.company_id === company && c.id !== data.id && c.starts_on <= end && c.ends_on >= start)) throw new Error('Les contrats ne peuvent pas se chevaucher')
-    const c = { id: String(data.id || id()), company_id: company, starts_on: start, ends_on: end, daily_rights: rights, cryo_quota: rights * 20, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) }
+    const c = { id: String(data.id || id()), company_id: company, starts_on: start, ends_on: end, daily_rights: rights, cryo_quota: rights * 20, discount: (data.discount || 'standard') as import('./model').Discount, paid_amount: data.paid_amount == null ? null : Number(data.paid_amount) }
     if (action === 'add_contract') s.contracts.push(c); else { const i = s.contracts.findIndex(x => x.id === data.id); if (i >= 0) s.contracts[i] = c }
   } else if (action !== 'send_access_link') throw new Error('Action inconnue')
   if (action !== 'demo_role') s.audit.unshift({ id: s.audit.length + 1, company_id: company, action, created_at: now, detail: { input: { reason: String(data.reason || '') } } })

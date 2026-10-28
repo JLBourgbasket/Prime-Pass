@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { companyTariff, vipTariff, salesSummary } from '../src/lib/model.ts'
+import { companyTariff, vipTariff, salesSummary, discountedAmount } from '../src/lib/model.ts'
 test('annual reference tariffs and both duo profiles',()=>{
  assert.equal(companyTariff(1),2690);assert.equal(companyTariff(2),4380);assert.equal(companyTariff(3),6070)
  assert.equal(vipTariff('individual',false),1890);assert.equal(vipTariff('individual',true),2690)
@@ -12,3 +12,5 @@ test('active people counts include each duo but exclude expired future and suspe
  const t=salesSummary(s);assert.equal(t.total,5);assert.equal(t.duoCount,1);assert.equal(t.enterpriseAmount,4300);assert.equal(t.individualAmount,1800);assert.equal(t.directorAmount,2490)
  s.contracts[0].paid_amount=null;assert.equal(salesSummary(s).missingPrices,1);assert.equal(salesSummary(s).enterpriseAmount,0)
 })
+
+test('exclusive commercial conditions apply to base and duo in cents',()=>{assert.equal(discountedAmount(2690,'jl_group'),2152);assert.equal(discountedAmount(2490,'jl_group'),1992);assert.equal(discountedAmount(4380,'free'),0);assert.equal(discountedAmount(1890,'standard'),1890)})

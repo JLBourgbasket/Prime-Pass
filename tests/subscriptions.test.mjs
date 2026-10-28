@@ -10,7 +10,7 @@ const person={first_name:'Alice',last_name:'Test',duo:true,duo_first_name:'Bob',
 const proposal=(patch={})=>({id:randomUUID(),offer:'individual',company_name:'',contact_name:'Alice Test',email:'alice@example.com',phone:'0102030405',quantity:1,participants:[person],consent:true,website:'',ip_hash:randomUUID(),...patch})
 before(async()=>{
  await db.exec('create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key)')
- for(const f of ['prime_pass_v2.sql','vip_sales.sql','subscriptions.sql'])await db.exec(await readFile(new URL('../supabase/'+f,import.meta.url),'utf8'))
+ for(const f of ['prime_pass_v2.sql','vip_sales.sql','subscriptions.sql','admin_discounts.sql'])await db.exec(await readFile(new URL('../supabase/'+f,import.meta.url),'utf8'))
  await db.query('insert into auth.users values($1),($2)',[admin,companyUser]);await db.query("insert into prime_pass.accounts(user_id,role) values($1,'prime_admin')",[admin]);await db.exec('set role service_role')
 })
 after(()=>db.close())
@@ -50,4 +50,12 @@ test('public Edge permits intake only and never honors supplied actor/action/ip'
  assert.equal((await handle(req({action:'activate',p_actor:'attacker',ip_hash:'forged'}))).status,200);assert.equal(calls[0].p_actor,null);assert.equal(calls[0].p_action,'submit');assert.notEqual(calls[0].p_data.ip_hash,'forged')
  assert.equal((await handle(new Request('https://test.supabase.co',{headers:{Origin:'https://evil.test'}}))).status,403)
  assert.equal((await handle(req({text:'a'.repeat(33000)}))).status,413)
+})
+
+test('public intake cannot apply reductions; admin activation passes them to each VIP',async()=>{
+ await assert.rejects(()=>rpc(null,'submit',proposal({discount:'free'})),/réservée/)
+ const id=randomUUID();await rpc(null,'submit',proposal({id,email:'discount@example.com',offer:'director'}))
+ await rpc(admin,'activate',{id,starts_on:'2026-01-01',ends_on:'2026-12-31',paid_amount:1992,discount:'jl_group'})
+ const row=(await db.query("select discount,list_amount::text,amount_due::text from prime_pass.vips where email='discount@example.com'")).rows[0]
+ assert.equal(row.discount,'jl_group');assert.equal(row.list_amount,'2490.00');assert.equal(row.amount_due,'1992.00')
 })

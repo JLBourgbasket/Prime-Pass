@@ -1,6 +1,8 @@
 export type Account = { user_id: string; role: 'prime_admin' | 'company'; company_id: string | null }
 export type Company = { id: string; name: string; contact_name: string; email: string; phone: string; logo: string | null; active: boolean }
-export type Contract = { id: string; company_id: string; starts_on: string; ends_on: string; daily_rights: number; cryo_quota: number; paid_amount?: number | null }
+export type Pricing = { discount?: Discount; list_amount?: number; amount_due?: number; paid_amount?: number | null }
+export type Discount = 'standard' | 'jl_group' | 'free'
+export type Contract = Pricing & { id: string; company_id: string; starts_on: string; ends_on: string; daily_rights: number; cryo_quota: number; paid_amount?: number | null }
 export type Beneficiary = { id: string; company_id: string; first_name: string; last_name: string; active: boolean }
 export type Claim = { id: string; company_id: string; contract_id: string; beneficiary_id: string; access_date: string; cancelled_at: string | null; created_at: string }
 export type Cryo = { id: string; company_id: string; contract_id: string; beneficiary_id: string; performed_on: string; created_at: string; voided_at: string | null; void_reason: string | null }
@@ -17,7 +19,7 @@ export const available = (s: Snapshot, company: string, day: string) => {
 }
 export const cryoUsed = (s: Snapshot, contract?: Contract) => contract ? s.cryo.filter(c => c.contract_id === contract.id && !c.voided_at).length : 0
 
-export type Vip = { id: string; first_name: string; last_name: string; email: string; phone: string; profile: 'individual' | 'director'; duo: boolean; duo_first_name: string | null; duo_last_name: string | null; starts_on: string; ends_on: string; paid_amount: number; active: boolean }
+export type Vip = Pricing & { id: string; first_name: string; last_name: string; email: string; phone: string; profile: 'individual' | 'director'; duo: boolean; duo_first_name: string | null; duo_last_name: string | null; starts_on: string; ends_on: string; paid_amount: number; active: boolean }
 export const companyTariff = (rights: number) => 2690 + Math.max(0, rights - 1) * 1690
 export const vipTariff = (profile: string, duo: boolean) => (profile === 'director' ? 1690 : 1890) + (duo ? 800 : 0)
 export const euros = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
@@ -31,3 +33,6 @@ export function salesSummary(s: Snapshot) {
     enterpriseAmount: contracts.reduce((n,c) => n + Number(c.paid_amount ?? 0), 0), missingPrices: contracts.filter(c => c.paid_amount == null).length,
     individualAmount: individual.reduce((n,v) => n + Number(v.paid_amount), 0), directorAmount: directors.reduce((n,v) => n + Number(v.paid_amount), 0) }
 }
+
+export const discountedAmount = (amount: number, discount: Discount = 'standard') => discount === 'free' ? 0 : Math.round(amount * (discount === 'jl_group' ? 80 : 100)) / 100
+export const discountLabel = (discount: Discount = 'standard') => discount === 'free' ? 'Gratuité' : discount === 'jl_group' ? 'Réduction JL Group −20 %' : 'Tarif standard'

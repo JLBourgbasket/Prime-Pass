@@ -10,6 +10,8 @@ before(async()=>{
  await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key)')
  await db.exec(await readFile(new URL('../supabase/prime_pass_v2.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../supabase/vip_sales.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../supabase/subscriptions.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../supabase/admin_discounts.sql',import.meta.url),'utf8'))
  await db.query('insert into auth.users(id) values ($1),($2),($3)',[admin,account,other])
  await db.query("insert into prime_pass.accounts(user_id,role) values($1,'prime_admin')",[admin])
  today=(await db.query("select (now() at time zone 'Europe/Paris')::date::text d")).rows[0].d
@@ -94,4 +96,17 @@ test('contract paid amounts can be corrected and historical unknown prices stay 
  assert.equal(Number((await rpc(admin,'snapshot')).contracts.find(c=>c.id===ct.id).paid_amount),2400.25)
  await assert.rejects(()=>rpc(account,'update_contract',{...ct,paid_amount:'10'}),/réservée à Prime/)
  await assert.rejects(()=>rpc(admin,'update_contract',{...ct,paid_amount:'-1'}),/check constraint/)
+})
+
+test('only Prime applies stored discounts; generated prices survive forged browser values',async()=>{
+ const ct=(await rpc(admin,'snapshot')).contracts.find(c=>c.id===contract.id)
+ await rpc(admin,'update_contract',{...ct,discount:'jl_group',paid_amount:2152,list_amount:1,amount_due:1})
+ let c=(await rpc(admin,'snapshot')).contracts.find(c=>c.id===ct.id);assert.equal(Number(c.list_amount),2690);assert.equal(Number(c.amount_due),2152);assert.equal(c.discount,'jl_group')
+ await assert.rejects(()=>rpc(account,'update_contract',{...ct,discount:'free',paid_amount:0}),/réservée/)
+ await rpc(admin,'update_contract',{...ct,discount:'free',paid_amount:0});c=(await rpc(admin,'snapshot')).contracts.find(c=>c.id===ct.id);assert.equal(Number(c.amount_due),0);assert.equal(Number(c.paid_amount),0)
+ await assert.rejects(()=>rpc(admin,'update_contract',{...ct,discount:'free',paid_amount:1}),/check constraint/)
+ const v={id:randomUUID(),first_name:'Discount',last_name:'Test',profile:'director',duo:true,duo_first_name:'Duo',duo_last_name:'Test',starts_on:today,ends_on:'2030-12-31',paid_amount:1992,active:true,discount:'jl_group'}
+ await rpc(admin,'save_vip',v);const vip=(await rpc(admin,'snapshot')).vips.find(x=>x.id===v.id);assert.equal(Number(vip.list_amount),2490);assert.equal(Number(vip.amount_due),1992)
+ await assert.rejects(()=>rpc(account,'save_vip',{...v,discount:'free',paid_amount:0}),/réservée/)
+ await assert.rejects(()=>rpc(admin,'save_vip',{...v,discount:'free',paid_amount:2}),/check constraint/)
 })
