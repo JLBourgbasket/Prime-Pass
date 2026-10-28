@@ -5,7 +5,7 @@ type ClientFactory = (url: string, key: string, options: { auth: { persistSessio
 export function createHandler(createClient: ClientFactory, env: (key: string) => string | undefined, notify?: Notify) {
 const siteUrl = env('SITE_URL') || 'https://primepassentreprise.netlify.app'
 const allowedOrigins = new Set([siteUrl, 'https://deploy-preview-1--primepassentreprise.netlify.app'])
-const allowed = new Set(['lifecycle_archive_company','lifecycle_archive_vip','lifecycle_restore_company','lifecycle_restore_vip','lifecycle_purge_company','lifecycle_purge_vip','subscriptions_notify', 'subscriptions_list', 'subscriptions_campaign', 'subscriptions_decline', 'subscriptions_activate', 'save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
+const allowed = new Set(['lifecycle_archive_company','lifecycle_archive_vip','lifecycle_restore_company','lifecycle_restore_vip','lifecycle_purge_company','lifecycle_purge_vip','subscriptions_receipt', 'subscriptions_notify', 'subscriptions_list', 'subscriptions_campaign', 'subscriptions_decline', 'subscriptions_activate', 'save_vip', 'snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
 
 return async (request: Request) => {
   const origin = request.headers.get('origin')
@@ -64,10 +64,11 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
       if (input.action === 'subscriptions_campaign') return json(await srpc('set_campaign', data))
       if (input.action === 'subscriptions_decline') return json(await srpc('decline', data))
       const sub = await srpc('get', { id: data.id })
-      if (input.action === 'subscriptions_notify') {
+      if (input.action === 'subscriptions_notify' || input.action === 'subscriptions_receipt') {
         if(!notify) return json({error:'Envoi indisponible'},503)
-        const status=await notify(admin,sub.id,auth.user.id,true)
-        return json({ok:true,notice:status==='sent'?'Notification envoyée à vip@primesportsante.fr.':status==='unchanged'?'Notification déjà envoyée ou tentative en cours.':'Échec de l’envoi. La demande reste enregistrée ; consultez l’état de notification.'})
+        const subscriber=input.action==='subscriptions_receipt'
+        const status=await notify(admin,sub.id,auth.user.id,true,subscriber?'subscriber':'internal')
+        return json({ok:true,notice:status==='sent'?(subscriber?'Accusé de réception envoyé au souscripteur.':'Notification envoyée à vip@primesportsante.fr.'):status==='unchanged'?'Notification déjà envoyée ou tentative en cours.':'Échec de l’envoi. La demande reste enregistrée ; consultez l’état de notification.'})
       }
       if (sub.status !== 'pending') return json({ error: 'Cette demande a déjà été traitée.' }, 400)
       let userId: string | undefined

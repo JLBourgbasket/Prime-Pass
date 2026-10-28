@@ -25,7 +25,7 @@ Le quota d’un contrat est calculé en base : **20 séances cryo par droit quot
 
 Projet Supabase : `iljpcjrzctsuluaiseww` (Prime Pass, compte Prime Sport Santé).
 
-Les sept migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
+Les huit migrations v2 ont été installées et testées sur ce projet ; les fixtures ont été exécutées dans une transaction annulée, sans conserver de comptes ou d’entreprises fictifs. La fonction Edge `prime-pass` est déployée. Les appels sans session ou avec une session invalide sont refusés.
 
 **À terminer avant utilisation réelle :** premier compte administrateur Prime, configuration des e-mails et des URLs Auth, et déploiement de cette branche sur le nouveau site Netlify. Les parcours de connexion réelle et d’envoi des e-mails doivent ensuite être validés de bout en bout.
 
@@ -66,6 +66,7 @@ Sur une base vierge, exécuter dans cet ordre :
 5. `supabase/admin_discounts.sql`
 6. `supabase/subscription_notifications.sql`
 7. `supabase/client_lifecycle.sql`
+8. `supabase/subscriber_receipts.sql`
 3. Déployer `supabase/functions/prime-pass/index.ts` et son module partagé.
 
 La vérification JWT de la passerelle Edge est désactivée au profit de la validation explicite de la session dans le handler (`auth.getUser(token)`) avant toute opération métier. Aucune action métier n’est anonyme. Les clés serveur proviennent uniquement des variables automatiques Supabase `SUPABASE_SECRET_KEYS` ou de leur équivalent historique.
@@ -138,9 +139,9 @@ Les fiches entreprises affichent « Tarif et règlement » dès leur ouverture a
 
 L’état, les tentatives et la date d’envoi restent attachés à la demande. Une prise de verrou et un jeton de tentative empêchent les doubles envois concurrents. Une nouvelle soumission du même UUID ne renvoie pas un email déjà tenté. Prime peut relancer une notification en attente/échouée depuis la fiche ; délai minimum d’une minute, récupération d’un envoi interrompu après cinq minutes. Une notification acceptée par le serveur SMTP n’est pas renvoyée. Le message a un identifiant stable par demande. Il reste une incertitude en cas de coupure après acceptation SMTP mais avant confirmation en base : une relance manuelle peut alors produire un doublon, la livraison SMTP n’étant pas transactionnelle avec PostgreSQL.
 
-La demande est confirmée au souscripteur même si Gmail échoue. Seules des catégories d’erreur sont conservées ; aucun mot de passe ou message SMTP brut n’est exposé. Les destinataire/expéditeur sont limités à l’adresse VIP configurée, et les notifications reprennent les données enregistrées, jamais un corps de mail ou un destinataire fournis par le client. L’email pointe vers `/?view=subscriptions`, la connexion Prime restant obligatoire. Ce dispositif n’envoie pas encore d’accusé de réception au souscripteur.
+La demande est confirmée au souscripteur même si Gmail échoue. Seules des catégories d’erreur sont conservées ; aucun mot de passe ou message SMTP brut n’est exposé. La notification interne utilise uniquement l’adresse VIP configurée ; l’accusé de réception utilise uniquement l’adresse enregistrée dans la demande. L’expéditeur reste l’adresse VIP, et les notifications reprennent les données enregistrées, jamais un corps de mail ou un destinataire fournis par le client. L’email pointe vers `/?view=subscriptions`, la connexion Prime restant obligatoire. Le souscripteur reçoit également un accusé de réception, dont l’état et les relances sont indépendants de la notification Prime.
 
-Test réel du raccordement : l’envoi de la demande existante Game Plan a atteint Gmail, qui a refusé l’authentification (`smtp_auth`). Aucun doublon de demande n’a été créé. Corriger le secret du mot de passe d’application, puis utiliser « Envoyer la notification » depuis sa fiche pour tester à nouveau.
+L’état « Envoyé » signifie que le serveur SMTP a accepté le message. Il ne constitue pas une preuve de réception dans la boîte finale ou de lecture. Les identifiants Google restent exclusivement dans les secrets de fonction.
 
 ## Clients désactivés
 
@@ -151,3 +152,11 @@ La réactivation exige une nouvelle période, les nouveaux droits entreprise (qu
 La suppression définitive n’est possible que sur une fiche inactive, après saisie exacte du nom. L’entreprise est effacée avec ses bénéficiaires, contrats, utilisations, notifications/demandes liées et opérations contenant ses données. Les comptes de connexion sont retirés de l’application avant leur suppression via Supabase Auth. Une file privée `auth_cleanup` permet de reprendre cette dernière étape après un échec réseau lors du prochain chargement de la console Prime ; aucun accès applicatif ne subsiste entre-temps. Aucun compte Auth n’est supprimé par SQL. Les suppressions VIP effacent la fiche et les audits associés. Dans une demande regroupant plusieurs VIP, seule l’identité du VIP supprimé est masquée et les autres clients sont conservés. Une trace minimale de suppression, sans nom, reste dans le journal.
 
 Les opérations passent par un RPC interne réservé au serveur, qui vérifie le rôle Prime, verrouille la fiche et contrôle son état et la confirmation. Les tests de suppression utilisent exclusivement des fixtures isolées ; aucune fiche client réelle n’est supprimée pour vérifier le déploiement.
+
+## Accusé de réception au souscripteur
+
+Après chaque dépôt, un second email part de `vip@primesportsante.fr` vers l’adresse du contact enregistrée en base, avec récapitulatif de l’offre, quantité, options et montant demandé. Il précise que le lien de paiement suivra et que l’activation exige la validation Prime. Pour une demande déjà activée, le texte confirme ce statut et précise qu’il ne s’agit pas d’une nouvelle demande de paiement. Aucune URL d’administration n’est incluse dans l’accusé destiné au client ; ses réponses arrivent à VIP.
+
+Les colonnes `receipt_*` et le RPC interne `prime_pass_receipt` suivent cet envoi indépendamment des colonnes `notification_*`. Les deux envois ont des identifiants différents, des verrous et des délais de relance distincts. La console présente les deux états et un bouton pour relancer chaque email non envoyé, sans répéter celui déjà accepté par SMTP. Les jetons de tentative ne sont jamais renvoyés à la console. Les anciens dossiers restent « À envoyer » pour l’accusé ; il n’y a pas d’envoi massif rétroactif.
+
+Vérification du raccordement des accusés : l’envoi vers le contact de la demande Game Plan existante a été accepté par Gmail, avec `receipt_status=sent`, une seule tentative et aucune erreur. La notification interne déjà envoyée n’a pas été répétée.
