@@ -170,3 +170,5 @@ Les informations saisies sont échappées avant insertion HTML ; seuls les email
 ## Modèle HTML Supabase Auth prêt à installer
 
 Le fichier `supabase/templates/recovery.html` harmonise les emails de première définition et de réinitialisation du mot de passe avec la charte Prime. La procédure d’enregistrement et l’objet figurent dans `supabase/templates/README.md`. Ce modèle est préparé et versionné ; il doit être enregistré dans Supabase Auth Email Templates pour devenir actif. La connexion Supabase actuelle ne permet pas d’éditer ce paramètre.
+
+Le logo des modèles Supabase Auth est disponible publiquement sur `https://iljpcjrzctsuluaiseww.supabase.co/functions/v1/prime-assets/prime-logo.png`. La fonction `prime-assets` accepte uniquement GET/HEAD et retourne le PNG officiel, sans accès à la base ni aux secrets. Si un modèle a déjà été collé dans Supabase, remplacer son ancienne URL GitHub par cette URL.
