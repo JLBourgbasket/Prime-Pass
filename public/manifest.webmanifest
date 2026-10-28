@@ -1,17 +1,17 @@
 {
-  "name": "PRIME PASS",
-  "short_name": "PRIME PASS",
-  "description": "Gestion des accès quotidiens Prime Sport Santé",
+  "name": "Prime Pass Entreprise",
+  "short_name": "Prime Pass",
+  "description": "Gestion interne des droits du Pass Entreprise",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#030D23",
-  "theme_color": "#030D23",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "lang": "fr",
   "icons": [
     {
-      "src": "/prime-logo-dark.jpg",
-      "sizes": "699x535",
-      "type": "image/jpeg",
+      "src": "/prime-monogram.webp",
+      "sizes": "256x239",
+      "type": "image/webp",
       "purpose": "any"
     }
   ]

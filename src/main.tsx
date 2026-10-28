@@ -2,13 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles.css'
-
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'))
-}
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Remove legacy offline caches: allocations must always be confirmed by the server.
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()))
+if ('caches' in window) caches.keys().then(keys => keys.filter(k => k.startsWith('prime')).forEach(k => caches.delete(k)))
+createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)

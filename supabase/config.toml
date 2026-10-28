@@ -1,0 +1,5 @@
+project_id = "prime-pass-enterprise"
+
+[functions.prime-pass]
+# Authentication is performed in the handler with auth.getUser(token), before any RPC.
+verify_jwt = false
