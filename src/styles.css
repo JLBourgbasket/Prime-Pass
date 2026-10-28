@@ -15,3 +15,73 @@
 .pricing-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0}.pricing-summary dt{font-size:12px;color:#64748b;margin-bottom:8px}.pricing-summary dd{margin:0;font-weight:600}.discount-choices{padding:18px;background:#f6f9fd;border-radius:12px;margin:20px 0}.discount-choices strong,.discount-choices small{display:block}@media(max-width:700px){.pricing-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .danger-text{color:#a12b37!important}.danger{background:#a12b37;color:white;border-color:#a12b37}.panel form label.field{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+
+.mobile-label{display:none}
+@media(max-width:640px){
+ .enterprise-app{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .enterprise-app .page{padding:8px 16px 24px}
+ .enterprise-app .company-heading{padding:12px 0 20px;gap:12px}
+ .enterprise-app .company-heading>div{min-width:0}
+ .enterprise-app .company-heading h1{overflow-wrap:anywhere;font-size:27px}
+ .enterprise-app .company-logo{width:80px;max-height:64px}
+ .enterprise-app button{min-height:46px}
+ .enterprise-app .sync-line{justify-content:space-between;font-size:10px;gap:6px;min-height:44px}
+ .enterprise-app .sync-line button{font-size:12px;min-height:44px;padding:8px 0}
+ .enterprise-app .enterprise-nav{position:fixed;z-index:20;left:0;right:0;bottom:0;margin:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;border:0;border-top:1px solid var(--border);background:#fff;box-shadow:0 -4px 20px #132d4810;overflow:visible}
+ .enterprise-app .enterprise-nav button{display:flex;flex-direction:column;gap:4px;border:0;border-radius:10px;padding:8px 4px;min-height:58px;font-size:12px}
+ .enterprise-app .enterprise-nav button.active{background:#edf5ff;color:var(--blue)}
+ .enterprise-app .enterprise-nav button svg{width:21px;height:21px}
+ .enterprise-app .enterprise-nav .desktop-label{display:none}
+ .enterprise-app .enterprise-nav .mobile-label{display:inline}
+ .enterprise-app .today-panel{padding:20px;margin:0 0 16px;gap:18px}
+ .enterprise-app .today-panel>div{width:100%;min-width:0}
+ .enterprise-app .today-panel h2{font-size:17px}
+ .enterprise-app .today-panel .primary{width:100%;min-height:52px;font-size:15px;padding:12px}
+ .enterprise-app .today-count>strong{font-size:54px}
+ .enterprise-app .today-count span{font-size:15px}
+ .enterprise-app .today-names{display:flex;flex-direction:column;gap:8px}
+ .enterprise-app .today-names>span{justify-content:space-between;font-size:14px;padding:4px 12px;overflow-wrap:anywhere}
+ .enterprise-app .today-names button{font-size:13px;flex-shrink:0}
+ .enterprise-app .first-beneficiary{display:flex;align-items:stretch;flex-direction:column;margin:12px 0 24px;font-size:14px}
+ .enterprise-app .first-beneficiary button{width:100%;font-size:14px}
+ .enterprise-app .planning{display:grid;grid-template-rows:1fr;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x proximity;gap:8px;padding:3px 2px 12px;margin:14px 0 16px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ .enterprise-app .day{scroll-snap-align:start;min-height:120px;padding:12px 10px;gap:8px}
+ .enterprise-app .day>span{font-size:14px}
+ .enterprise-app .day strong{font-size:12px}
+ .enterprise-app .day small{font-size:11px}
+ .enterprise-app .section-heading h2{font-size:19px}
+ .enterprise-app .section-heading p{font-size:13px}
+ .enterprise-app .panel{padding:18px;margin:18px 0 24px;min-width:0}
+ .enterprise-app .section-heading>button{width:100%;font-size:14px;min-height:48px}
+ .enterprise-app .allocation-list li{align-items:flex-start;flex-direction:column;gap:4px;font-size:15px}
+ .enterprise-app .allocation-list li button{align-self:flex-end;font-size:13px}
+ .enterprise-app .quota-stats strong{font-size:30px}
+ .enterprise-app .quota-stats span{font-size:11px}
+ .enterprise-app .table-wrap{overflow:visible}
+ .enterprise-app table,.enterprise-app tbody{display:block;width:100%}
+ .enterprise-app thead{position:absolute;overflow:hidden;clip:rect(0,0,0,0);width:1px;height:1px;white-space:nowrap}
+ .enterprise-app tbody tr{display:block;border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:0 0 12px;background:white}
+ .enterprise-app td,.enterprise-app td:first-child{display:flex;justify-content:space-between;align-items:baseline;gap:18px;min-width:0;padding:8px 0;border:0;font-size:14px;text-align:right}
+ .enterprise-app td::before{content:attr(data-label);font-size:12px;color:var(--muted);font-weight:500;text-align:left;flex-shrink:0}
+ .enterprise-app td[data-label="Action"]{justify-content:flex-end;padding-top:6px}
+ .enterprise-app td[data-label="Action"]::before{display:none}
+ .enterprise-app td button{font-size:14px;padding:8px 12px}
+ .enterprise-app .history-status{font-size:13px}
+ .enterprise-app .badge{font-size:12px}
+ .enterprise-app .empty{font-size:14px;padding:24px 12px}
+ .enterprise-app dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px);padding:20px;overflow-y:auto;overscroll-behavior:contain;scroll-padding-bottom:80px}
+ .enterprise-app dialog .modal-heading{position:sticky;top:-20px;background:white;z-index:1;padding:16px 0 12px;margin-top:-12px}
+ .enterprise-app dialog .modal-actions{position:sticky;bottom:-20px;background:white;padding:16px 0;border-top:1px solid var(--border);gap:8px}
+ .enterprise-app dialog .modal-actions button{min-height:48px;font-size:14px}
+ .enterprise-app .field{font-size:14px}
+ .enterprise-app .field input,.enterprise-app .field select,.enterprise-app .field textarea{font-size:16px;min-height:50px}
+ .enterprise-app .checkbox{font-size:14px;min-height:44px}
+ .enterprise-app .checkbox input{width:22px;height:22px;flex-shrink:0}
+ .enterprise-app .app-footer{padding:16px;font-size:10px;flex-wrap:wrap}
+}
+
+@media(max-width:640px){.enterprise-app .day .desktop-label{display:none}.enterprise-app .day .mobile-label{display:inline}}
+
+@media(max-width:640px){.enterprise-app .app-header .icon-button{min-width:46px;min-height:46px}}
+
+@media(max-width:640px){.enterprise-app .section-heading .mobile-label{display:inline}}
