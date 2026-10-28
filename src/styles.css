@@ -88,3 +88,5 @@
 
 .install-app{display:none}@media(max-width:640px){.enterprise-app .install-app{display:block;margin:-8px 0 16px}.install-app>.link-button{font-size:12px;min-height:44px}.install-instructions{padding:16px;border:1px solid var(--border);border-radius:12px;background:#f5f9fe;font-size:13px}.install-instructions ol{padding-left:20px}.install-instructions li{margin:10px 0}.install-instructions p{font-size:12px;margin-bottom:0}}
 @media(max-width:640px){.app-header{padding-top:max(12px,env(safe-area-inset-top,0px));padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}}
+
+.subscription-filters{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 16px}.subscription-filters button[aria-pressed="true"]{background:#173a62;color:white;border-color:#173a62}.subscription-processed{background:#f5f7f8}.subscription-badge{display:inline-block;border-radius:6px;padding:5px 10px;margin-left:12px;font-size:12px;font-weight:700;white-space:nowrap}.subscription-badge.pending{background:#fff0d6;color:#864900}.subscription-badge.processed{background:#dcf3e5;color:#20643b}
