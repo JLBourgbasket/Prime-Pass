@@ -39,3 +39,13 @@ test('database errors produce actionable safe errors',async()=>{
  const handle=createHandler(()=>({auth:{getUser:async()=>({data:{user:{id:'verified'}}})},rpc:async()=>({error:{message:'new row violates check constraint secret_detail'}})}),env)
  const r=await handle(request({action:'claim'}));assert.equal(r.status,400);assert.equal((await r.json()).error,'Vérifiez les champs saisis et les valeurs du contrat.')
 })
+
+test('the authorized Netlify preview receives CORS headers but still requires a session',async()=>{
+ const {handle,calls}=setup();const preview='https://deploy-preview-1--primepassentreprise.netlify.app'
+ const preflight=await handle(new Request('https://test.supabase.co',{method:'OPTIONS',headers:{Origin:preview}}))
+ assert.equal(preflight.status,204);assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),preview)
+ const denied=await handle(new Request('https://test.supabase.co',{method:'POST',headers:{Origin:preview,'Content-Type':'application/json'},body:'{"action":"snapshot"}'}))
+ assert.equal(denied.status,401);assert.equal(denied.headers.get('Access-Control-Allow-Origin'),preview);assert.equal(calls.length,0)
+ const unrelated=await handle(new Request('https://test.supabase.co',{method:'OPTIONS',headers:{Origin:'https://deploy-preview-2--primepassentreprise.netlify.app'}}))
+ assert.equal(unrelated.status,403)
+})

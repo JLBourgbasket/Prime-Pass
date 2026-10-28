@@ -42,7 +42,7 @@ Relier le nouveau site à ce dépôt et à la branche de refonte. Éviter de fus
 - Variables publiques : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (voir `.env.example`).
 - `VITE_ENABLE_DEMO=false` en production. Sans configuration, l’application montre un écran de connexion indisponible ; elle ne bascule jamais automatiquement sur des données fictives.
 
-Le service Edge accepte par défaut l’origine `https://primepassentreprise.netlify.app`. Pour changer le domaine final, configurer `SITE_URL` dans les secrets de l’Edge Function et ajouter la même URL aux redirections autorisées de Supabase Auth. Les déploiements de prévisualisation ne sont pas autorisés à appeler la base par défaut.
+Le service Edge accepte par défaut l’origine `https://primepassentreprise.netlify.app`. Pour changer le domaine final, configurer `SITE_URL` dans les secrets de l’Edge Function et ajouter la même URL aux redirections autorisées de Supabase Auth. La prévisualisation `https://deploy-preview-1--primepassentreprise.netlify.app` est explicitement autorisée pour les tests. Les autres adresses de prévisualisation restent refusées. Toutes les opérations exigent une session valide, y compris sur la prévisualisation.
 
 ## Auth et e-mails
 

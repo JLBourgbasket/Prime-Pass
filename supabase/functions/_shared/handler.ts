@@ -3,15 +3,16 @@ type ClientFactory = (url: string, key: string, options: { auth: { persistSessio
 
 export function createHandler(createClient: ClientFactory, env: (key: string) => string | undefined) {
 const siteUrl = env('SITE_URL') || 'https://primepassentreprise.netlify.app'
-const cors = { 'Access-Control-Allow-Origin': siteUrl, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' }
-const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
-  status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
-})
+const allowedOrigins = new Set([siteUrl, 'https://deploy-preview-1--primepassentreprise.netlify.app'])
 const allowed = new Set(['snapshot', 'create_company', 'update_company', 'add_contract', 'update_contract', 'add_beneficiary', 'update_beneficiary', 'claim', 'cancel_claim', 'record_cryo', 'void_cryo', 'send_access_link'])
 
 return async (request: Request) => {
   const origin = request.headers.get('origin')
-  if (origin && origin !== siteUrl) return json({ error: 'Origine non autorisée' }, 403)
+const cors = { 'Access-Control-Allow-Origin': origin && allowedOrigins.has(origin) ? origin : siteUrl, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' }
+const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
+  status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+})
+  if (origin && !allowedOrigins.has(origin)) return json({ error: 'Origine non autorisée' }, 403)
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
   if (request.method !== 'POST') return json({ error: 'Méthode non autorisée' }, 405)
   const url = env('SUPABASE_URL')
