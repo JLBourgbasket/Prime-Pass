@@ -3,10 +3,19 @@
   publish = "dist"
 
 [build.environment]
-  VITE_SUPABASE_URL = "https://lftexlgynqlkkukfbxgq.supabase.co"
-  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_U9P1Xc3xH2DqxMKvKxWVug_9GR9lyg5"
+  NODE_VERSION = "24"
+  VITE_SUPABASE_URL = "https://iljpcjrzctsuluaiseww.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_zxn6bxseGIq7HZY-wvbL1Q_JOZI6xIZ"
+  VITE_ENABLE_DEMO = "false"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"

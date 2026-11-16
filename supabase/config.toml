@@ -1,0 +1,13 @@
+project_id = "prime-pass-enterprise"
+
+[functions.prime-pass]
+# Authentication is performed in the handler with auth.getUser(token), before any RPC.
+verify_jwt = false
+
+[functions.prime-subscribe]
+# Public intake only; no access to private records or account provisioning.
+verify_jwt = false
+
+[functions.prime-assets]
+# Public, read-only official logo. No credentials or database access.
+verify_jwt = false
